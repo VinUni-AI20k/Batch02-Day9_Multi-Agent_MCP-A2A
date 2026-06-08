@@ -12,6 +12,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
+from common import viz
 from customer_agent.graph import build_graph
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class CustomerAgentExecutor(AgentExecutor):
             "CustomerAgent executing | task=%s context=%s trace=%s depth=%d",
             task_id, context_id, trace_id, depth,
         )
+        viz.emit("customer", "start", trace_id=trace_id, depth=depth, question=question[:200])
 
         updater = TaskUpdater(event_queue, task_id, context_id)
         await updater.submit()
@@ -79,6 +81,7 @@ class CustomerAgentExecutor(AgentExecutor):
                 name="legal_response",
             )
             await updater.complete()
+            viz.emit("customer", "complete", trace_id=trace_id, answer_chars=len(answer))
 
         except Exception as exc:
             logger.exception("CustomerAgent execution error: %s", exc)

@@ -4,6 +4,11 @@ set -e
 # Start all Legal Multi-Agent System services
 # Registry must be first, then leaf agents, then orchestrators
 
+echo "Starting Visualization server on port 10200..."
+python viz_server.py &
+VIZ_PID=$!
+sleep 1
+
 echo "Starting Registry service on port 10000..."
 python -m registry &
 REGISTRY_PID=$!
@@ -29,6 +34,7 @@ CUSTOMER_PID=$!
 
 echo ""
 echo "All services started:"
+echo "  Visualization:    http://localhost:10200"
 echo "  Registry:         http://localhost:10000"
 echo "  Customer Agent:   http://localhost:10100"
 echo "  Law Agent:        http://localhost:10101"
@@ -41,4 +47,4 @@ echo ""
 echo "Press Ctrl+C to stop all services."
 
 # Wait for all background processes
-wait $REGISTRY_PID $TAX_PID $COMPLIANCE_PID $LAW_PID $CUSTOMER_PID
+wait $VIZ_PID $REGISTRY_PID $TAX_PID $COMPLIANCE_PID $LAW_PID $CUSTOMER_PID

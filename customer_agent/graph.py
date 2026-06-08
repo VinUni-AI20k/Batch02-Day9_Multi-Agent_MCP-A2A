@@ -17,6 +17,7 @@ from typing import Any
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 
+from common import viz
 from common.llm import get_llm
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,9 @@ def build_graph(trace_id: str, context_id: str, depth: int) -> Any:
         )
 
         try:
+            viz.emit("customer", "discover", trace_id=trace_id, skill="legal_question")
             endpoint = await discover("legal_question")
+            viz.emit("customer", "delegate", trace_id=trace_id, target="law", endpoint=endpoint)
             result = await delegate(
                 endpoint=endpoint,
                 question=question,
@@ -80,11 +83,13 @@ def build_graph(trace_id: str, context_id: str, depth: int) -> Any:
                 trace_id=trace_id,
                 depth=depth + 1,
             )
+            viz.emit("customer", "delegate.return", trace_id=trace_id, chars=len(result or ""))
             if not result:
                 return "The Law Agent returned an empty response. Please try again."
             return result
         except Exception as exc:
             logger.exception("delegate_to_legal_agent failed: %s", exc)
+            viz.emit("customer", "delegate.error", trace_id=trace_id, error=str(exc))
             return f"Could not reach the Law Agent: {exc}"
 
     llm = get_llm()

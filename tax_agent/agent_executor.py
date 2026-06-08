@@ -12,6 +12,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
+from common import viz
 from tax_agent.graph import create_graph
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ class TaxAgentExecutor(AgentExecutor):
             "TaxAgent executing | task=%s context=%s trace=%s depth=%d",
             task_id, context_id, trace_id, depth,
         )
+        viz.emit("tax", "start", trace_id=trace_id, depth=depth)
 
         updater = TaskUpdater(event_queue, task_id, context_id)
         await updater.submit()
@@ -69,6 +71,7 @@ class TaxAgentExecutor(AgentExecutor):
                 name="tax_analysis",
             )
             await updater.complete()
+            viz.emit("tax", "complete", trace_id=trace_id, answer_chars=len(answer))
 
         except Exception as exc:
             logger.exception("TaxAgent execution error: %s", exc)

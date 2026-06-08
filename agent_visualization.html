@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Legal Multi-Agent — Interaction Visualization</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2030;
+    --panel-2: #222b3d;
+    --border: #2a3447;
+    --text: #e6edf3;
+    --muted: #8b97a8;
+    --accent: #4fc3f7;
+    --user: #ffb74d;
+    --customer: #81c784;
+    --registry: #ba68c8;
+    --law: #64b5f6;
+    --tax: #f06292;
+    --compliance: #ffd54f;
+    --edge: #3d4a63;
+    --edge-active: #4fc3f7;
+    --edge-parallel: #f06292;
+    --edge-return: #66bb6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    grid-column: 1 / -1;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .conn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  header .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #555;
+    transition: background 0.2s;
+  }
+  header .dot.live { background: #66bb6a; box-shadow: 0 0 6px #66bb6a; }
+  header .dot.err  { background: #ef5350; }
+  main {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(79,195,247,0.05), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(240,98,146,0.05), transparent 50%),
+      var(--bg);
+  }
+  svg { width: 100%; height: 100%; display: block; }
+  aside {
+    border-left: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .section {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+  }
+  .section h3 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+  }
+  select, input[type=text] {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+  .row .grow { flex: 2; }
+  .row .shrink { flex: 0 0 auto; }
+  button {
+    background: var(--accent);
+    color: #0f1419;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .case-desc {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+  .controls-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .legend { padding: 10px 18px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .legend-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 2px 0; color: var(--muted);
+  }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+  .steps {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+  .step {
+    padding: 8px 18px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 12.5px;
+  }
+  .step:hover { background: rgba(255,255,255,0.04); }
+  .step.visited { opacity: 0.7; }
+  .step.active {
+    background: rgba(79,195,247,0.10);
+    border-left-color: var(--accent);
+    opacity: 1;
+  }
+  .step .num {
+    display: inline-block; width: 22px;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .step .title { font-weight: 600; }
+  .step .desc {
+    color: var(--muted); font-size: 11.5px;
+    margin-top: 3px; margin-left: 22px; line-height: 1.4;
+  }
+  .step .tag {
+    display: inline-block;
+    font-size: 9.5px; padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--edge); color: var(--text);
+    margin-left: 6px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .step .tag.a2a { background: #1976d2; }
+  .step .tag.llm { background: #7e57c2; }
+  .step .tag.discover { background: #8e24aa; }
+  .step .tag.return { background: #43a047; }
+  .log {
+    background: var(--bg);
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 6px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+  .log .line { padding: 2px 0; white-space: pre-wrap; }
+  .log .agent-customer { color: var(--customer); }
+  .log .agent-law      { color: var(--law); }
+  .log .agent-tax      { color: var(--tax); }
+  .log .agent-compliance { color: var(--compliance); }
+  .log .agent-viz      { color: var(--accent); }
+  .log .ts { color: #5a6478; }
+
+  /* SVG node styles */
+  .node rect {
+    stroke: var(--border);
+    stroke-width: 1.5;
+    rx: 8;
+    transition: filter 0.2s, stroke 0.2s, stroke-width 0.2s;
+  }
+  .node text {
+    fill: var(--text);
+    font-size: 13px; font-weight: 600;
+    text-anchor: middle; dominant-baseline: middle;
+    pointer-events: none;
+  }
+  .node .port { font-size: 10px; fill: rgba(255,255,255,0.6); font-weight: 400; }
+  .node.active rect {
+    stroke: var(--accent); stroke-width: 3;
+    filter: drop-shadow(0 0 12px var(--accent));
+  }
+  .edge {
+    fill: none;
+    stroke: var(--edge);
+    stroke-width: 2;
+    opacity: 0.35;
+    transition: stroke 0.25s, stroke-width 0.25s, opacity 0.25s;
+  }
+  .edge.active {
+    stroke: var(--edge-active);
+    stroke-width: 3;
+    opacity: 1;
+    stroke-dasharray: 8 4;
+    animation: dash 0.7s linear infinite;
+  }
+  .edge.active.parallel { stroke: var(--edge-parallel); }
+  .edge.active.return { stroke: var(--edge-return); }
+  @keyframes dash { to { stroke-dashoffset: -24; } }
+  .edge-label {
+    font-size: 11px; fill: var(--muted);
+    text-anchor: middle; pointer-events: none;
+  }
+  .answer {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 10px 14px;
+    font-size: 12px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s;
+  }
+  .answer.open { max-height: 240px; overflow-y: auto; }
+  .answer h4 {
+    margin: 0 0 6px 0; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Legal Multi-Agent System — Interaction Flow</h1>
+  <div class="sub">Customer → Law → (Tax ∥ Compliance) via A2A + Registry</div>
+  <div class="conn">
+    <span class="dot" id="connDot"></span><span id="connText">Connecting…</span>
+  </div>
+</header>
+
+<main>
+  <svg id="diagram" viewBox="0 0 1100 720" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge)" />
+      </marker>
+      <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-active)" />
+      </marker>
+      <marker id="arrow-parallel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-parallel)" />
+      </marker>
+      <marker id="arrow-return" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-return)" />
+      </marker>
+    </defs>
+
+    <g id="edges">
+      <path class="edge" id="e_user_customer" d="M 100 360 L 230 360" marker-end="url(#arrow)" />
+      <path class="edge" id="e_customer_user" d="M 230 380 L 100 380" marker-end="url(#arrow-return)" />
+      <path class="edge" id="e_customer_registry" d="M 330 320 Q 430 200 540 130" marker-end="url(#arrow)" />
+      <path class="edge" id="e_customer_law" d="M 360 360 L 530 360" marker-end="url(#arrow)" />
+      <path class="edge" id="e_law_registry" d="M 600 320 L 600 170" marker-end="url(#arrow)" />
+      <path class="edge" id="e_law_tax" d="M 670 340 Q 800 260 880 200" marker-end="url(#arrow)" />
+      <path class="edge" id="e_law_compliance" d="M 670 400 Q 800 480 880 540" marker-end="url(#arrow)" />
+      <path class="edge" id="e_tax_law" d="M 880 230 Q 800 290 670 360" marker-end="url(#arrow-return)" />
+      <path class="edge" id="e_compliance_law" d="M 880 510 Q 800 460 670 380" marker-end="url(#arrow-return)" />
+      <path class="edge" id="e_law_customer" d="M 530 380 L 360 380" marker-end="url(#arrow-return)" />
+    </g>
+
+    <g>
+      <text class="edge-label" x="165" y="350">HTTP</text>
+      <text class="edge-label" x="430" y="180">discover()</text>
+      <text class="edge-label" x="445" y="350">A2A delegate</text>
+      <text class="edge-label" x="630" y="245">discover()</text>
+      <text class="edge-label" x="795" y="240">A2A (parallel)</text>
+      <text class="edge-label" x="795" y="490">A2A (parallel)</text>
+    </g>
+
+    <g id="nodes">
+      <g class="node" id="n_user">
+        <rect x="20" y="340" width="80" height="60" fill="var(--user)" fill-opacity="0.15" stroke="var(--user)" />
+        <text x="60" y="365">User</text>
+        <text x="60" y="385" class="port">test_client.py</text>
+      </g>
+      <g class="node" id="n_customer">
+        <rect x="225" y="330" width="135" height="80" fill="var(--customer)" fill-opacity="0.15" stroke="var(--customer)" />
+        <text x="292" y="358">Customer Agent</text>
+        <text x="292" y="378" class="port">:10100</text>
+        <text x="292" y="395" class="port">create_react_agent</text>
+      </g>
+      <g class="node" id="n_registry">
+        <rect x="525" y="85" width="150" height="70" fill="var(--registry)" fill-opacity="0.15" stroke="var(--registry)" />
+        <text x="600" y="110">Registry</text>
+        <text x="600" y="130" class="port">:10000</text>
+        <text x="600" y="145" class="port">skill → endpoint</text>
+      </g>
+      <g class="node" id="n_law">
+        <rect x="525" y="325" width="150" height="90" fill="var(--law)" fill-opacity="0.15" stroke="var(--law)" />
+        <text x="600" y="350">Law Agent</text>
+        <text x="600" y="370" class="port">:10101</text>
+        <text x="600" y="388" class="port">StateGraph</text>
+        <text x="600" y="403" class="port">analyze → route → ⤳</text>
+      </g>
+      <g class="node" id="n_tax">
+        <rect x="870" y="145" width="140" height="80" fill="var(--tax)" fill-opacity="0.15" stroke="var(--tax)" />
+        <text x="940" y="170">Tax Agent</text>
+        <text x="940" y="190" class="port">:10102</text>
+        <text x="940" y="207" class="port">create_react_agent</text>
+      </g>
+      <g class="node" id="n_compliance">
+        <rect x="867" y="525" width="146" height="80" fill="var(--compliance)" fill-opacity="0.15" stroke="var(--compliance)" />
+        <text x="940" y="550">Compliance Agent</text>
+        <text x="940" y="570" class="port">:10103</text>
+        <text x="940" y="587" class="port">create_react_agent</text>
+      </g>
+    </g>
+  </svg>
+</main>
+
+<aside>
+  <div class="section">
+    <h3>Live — run a real test case</h3>
+    <div class="row">
+      <select id="caseSel" class="grow"></select>
+      <button id="runBtn" class="shrink">▶ Run</button>
+    </div>
+    <div class="case-desc" id="caseDesc"></div>
+  </div>
+
+  <div class="section">
+    <h3>Demo (offline animation)</h3>
+    <div class="controls-row">
+      <button id="play" class="secondary">▶ Play</button>
+      <button id="step" class="secondary">Step</button>
+      <button id="reset" class="secondary">Reset</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-row"><span class="legend-swatch" style="background:var(--user)"></span>End user / test client</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:var(--customer)"></span>Customer agent — ReAct loop</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:var(--registry)"></span>Registry — skill→endpoint lookup</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:var(--law)"></span>Law agent — StateGraph orchestrator</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:var(--tax)"></span>Tax specialist (leaf)</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:var(--compliance)"></span>Compliance specialist (leaf)</div>
+  </div>
+
+  <div class="steps" id="steps"></div>
+
+  <div class="answer" id="answerBox">
+    <h4>Final answer</h4>
+    <div id="answerText"></div>
+  </div>
+
+  <div class="log" id="log"></div>
+</aside>
+
+<script>
+const STEPS = [
+  { title: "User sends legal question",            desc: "test_client / viz_server POSTs to Customer Agent over A2A.",          tag: "a2a",      nodes: ["n_user","n_customer"], edges: [{id:"e_user_customer"}] },
+  { title: "Customer agent reasons (ReAct)",       desc: "create_react_agent decides to call delegate_to_legal_agent tool.",     tag: "llm",      nodes: ["n_customer"],          edges: [] },
+  { title: "Customer discovers Law Agent",         desc: "registry_client.discover('legal_question') → endpoint.",               tag: "discover", nodes: ["n_customer","n_registry"], edges: [{id:"e_customer_registry"}] },
+  { title: "Customer delegates to Law Agent",      desc: "a2a_client.delegate sends question + trace_id over A2A.",              tag: "a2a",      nodes: ["n_customer","n_law"],  edges: [{id:"e_customer_law"}] },
+  { title: "Law: analyze_law node",                desc: "LLM as corporate litigation attorney → law_analysis in state.",        tag: "llm",      nodes: ["n_law"],               edges: [] },
+  { title: "Law: check_routing node",              desc: "LLM returns JSON {needs_tax, needs_compliance}. Capped at depth=3.",   tag: "llm",      nodes: ["n_law"],               edges: [] },
+  { title: "Law discovers sub-agents",             desc: "Registry lookup for 'tax_question' and 'compliance_question'.",        tag: "discover", nodes: ["n_law","n_registry"],  edges: [{id:"e_law_registry"}] },
+  { title: "Parallel dispatch via Send API",       desc: "route_to_subagents returns [Send('call_tax'), Send('call_compliance')].", tag: "a2a", nodes: ["n_law","n_tax","n_compliance"], edges: [{id:"e_law_tax",cls:"parallel"},{id:"e_law_compliance",cls:"parallel"}] },
+  { title: "Tax & Compliance specialists answer",  desc: "Each runs its own create_react_agent with a domain system prompt.",    tag: "llm",      nodes: ["n_tax","n_compliance"], edges: [] },
+  { title: "Sub-agent results return to Law",      desc: "tax_result and compliance_result land via the _last_wins reducer.",    tag: "return",   nodes: ["n_tax","n_compliance","n_law"], edges: [{id:"e_tax_law",cls:"return"},{id:"e_compliance_law",cls:"return"}] },
+  { title: "Law: aggregate node",                  desc: "LLM synthesises law + tax + compliance into one final_answer.",        tag: "llm",      nodes: ["n_law"],               edges: [] },
+  { title: "Law → Customer response",              desc: "Aggregated answer flows back over A2A to Customer Agent.",             tag: "return",   nodes: ["n_law","n_customer"],  edges: [{id:"e_law_customer",cls:"return"}] },
+  { title: "Customer → User",                      desc: "Customer agent presents the comprehensive answer.",                    tag: "return",   nodes: ["n_customer","n_user"], edges: [{id:"e_customer_user",cls:"return"}] },
+];
+
+// agent.phase  -> step index
+const PHASE_MAP = {
+  "viz.run.start":             0,
+  "customer.start":            0,
+  "customer.discover":         2,
+  "customer.delegate":         3,
+  "law.start":                 3,
+  "law.analyze":               4,
+  "law.routing":               5,
+  "law.routing.decision":      5,
+  "law.dispatch":              7,
+  "tax.start":                 8,
+  "compliance.start":          8,
+  "tax.complete":              9,
+  "compliance.complete":       9,
+  "law.dispatch.return":       9,
+  "law.aggregate":            10,
+  "law.complete":             11,
+  "customer.delegate.return": 11,
+  "customer.complete":        12,
+  "viz.run.end":              12,
+};
+
+const stepsEl = document.getElementById("steps");
+const playBtn = document.getElementById("play");
+const stepBtn = document.getElementById("step");
+const resetBtn = document.getElementById("reset");
+const caseSel = document.getElementById("caseSel");
+const caseDesc = document.getElementById("caseDesc");
+const runBtn = document.getElementById("runBtn");
+const logEl = document.getElementById("log");
+const connDot = document.getElementById("connDot");
+const connText = document.getElementById("connText");
+const answerBox = document.getElementById("answerBox");
+const answerText = document.getElementById("answerText");
+
+let current = -1;
+const visited = new Set();
+let playing = false;
+let playTimer = null;
+
+// ----- Step list rendering -----
+STEPS.forEach((s, i) => {
+  const div = document.createElement("div");
+  div.className = "step";
+  div.dataset.idx = i;
+  div.innerHTML = `
+    <div><span class="num">${i + 1}</span><span class="title">${s.title}</span>
+      <span class="tag ${s.tag}">${s.tag}</span></div>
+    <div class="desc">${s.desc}</div>`;
+  div.addEventListener("click", () => { stopPlay(); goTo(i); });
+  stepsEl.appendChild(div);
+});
+
+function clearHighlights() {
+  document.querySelectorAll(".node.active").forEach(n => n.classList.remove("active"));
+  document.querySelectorAll(".edge.active").forEach(e => {
+    e.classList.remove("active","parallel","return");
+    e.setAttribute("marker-end","url(#arrow)");
+  });
+  document.querySelectorAll(".step.active").forEach(s => s.classList.remove("active"));
+}
+
+function applyStep(i, opts = {}) {
+  clearHighlights();
+  if (i < 0 || i >= STEPS.length) return;
+  const s = STEPS[i];
+  s.nodes.forEach(id => document.getElementById(id)?.classList.add("active"));
+  s.edges.forEach(e => {
+    const el = document.getElementById(e.id);
+    if (!el) return;
+    el.classList.add("active");
+    if (e.cls) el.classList.add(e.cls);
+    let marker = "url(#arrow-active)";
+    if (e.cls === "parallel") marker = "url(#arrow-parallel)";
+    if (e.cls === "return") marker = "url(#arrow-return)";
+    el.setAttribute("marker-end", marker);
+  });
+  const stepEl = stepsEl.querySelector(`[data-idx="${i}"]`);
+  if (stepEl) {
+    stepEl.classList.add("active");
+    if (opts.scroll !== false) stepEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  // visited bookkeeping
+  visited.add(i);
+  document.querySelectorAll(".step").forEach(el => {
+    const idx = +el.dataset.idx;
+    if (idx < i && visited.has(idx)) el.classList.add("visited");
+    else el.classList.remove("visited");
+  });
+}
+
+function goTo(i) {
+  current = i;
+  applyStep(i);
+}
+
+function nextStep() {
+  if (current < STEPS.length - 1) goTo(current + 1);
+  else stopPlay();
+}
+
+function startPlay() {
+  if (playing) return;
+  playing = true;
+  playBtn.textContent = "⏸ Pause";
+  if (current >= STEPS.length - 1) { visited.clear(); goTo(0); }
+  else nextStep();
+  playTimer = setInterval(() => {
+    if (current >= STEPS.length - 1) { stopPlay(); return; }
+    nextStep();
+  }, 1800);
+}
+
+function stopPlay() {
+  playing = false;
+  playBtn.textContent = "▶ Play";
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+}
+
+playBtn.addEventListener("click", () => playing ? stopPlay() : startPlay());
+stepBtn.addEventListener("click", () => { stopPlay(); nextStep(); });
+resetBtn.addEventListener("click", () => {
+  stopPlay(); current = -1; visited.clear(); clearHighlights();
+  answerBox.classList.remove("open"); answerText.textContent = "";
+  logEl.innerHTML = "";
+});
+
+// ----- Live mode -----
+function setConn(state, text) {
+  connDot.className = "dot " + state;
+  connText.textContent = text;
+}
+
+function log(event) {
+  const div = document.createElement("div");
+  div.className = "line agent-" + event.agent;
+  const ts = new Date((event.ts ?? Date.now()/1000) * 1000).toISOString().substr(11, 12);
+  let extra = "";
+  for (const [k, v] of Object.entries(event)) {
+    if (["agent","phase","trace_id","ts"].includes(k)) continue;
+    if (v == null) continue;
+    const sv = typeof v === "string" && v.length > 80 ? v.slice(0,80) + "…" : v;
+    extra += ` ${k}=${JSON.stringify(sv)}`;
+  }
+  div.innerHTML = `<span class="ts">${ts}</span> ${event.agent}.${event.phase}${extra}`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+  while (logEl.children.length > 200) logEl.removeChild(logEl.firstChild);
+}
+
+function handleEvent(event) {
+  log(event);
+  const key = `${event.agent}.${event.phase}`;
+  // Special-case end-of-run
+  if (event.phase === "run.end" && event.answer) {
+    answerText.textContent = event.answer;
+    answerBox.classList.add("open");
+  }
+  if (event.phase === "run.error" && event.error) {
+    answerText.textContent = "ERROR: " + event.error;
+    answerBox.classList.add("open");
+  }
+  if (event.phase === "run.start") {
+    // Reset board for new run
+    current = -1; visited.clear(); clearHighlights();
+    answerBox.classList.remove("open"); answerText.textContent = "";
+  }
+  const idx = PHASE_MAP[key];
+  if (idx !== undefined) {
+    stopPlay();
+    goTo(idx);
+  }
+}
+
+function connectSSE() {
+  setConn("", "Connecting…");
+  const es = new EventSource("/api/events");
+  es.addEventListener("hello", () => setConn("live", "Live"));
+  es.onmessage = (msg) => {
+    try {
+      const event = JSON.parse(msg.data);
+      handleEvent(event);
+    } catch (e) { console.error("bad SSE payload", msg.data); }
+  };
+  es.onerror = () => {
+    setConn("err", "Disconnected — retrying…");
+  };
+}
+
+async function loadCases() {
+  try {
+    const r = await fetch("/api/cases");
+    if (!r.ok) throw new Error("bad cases response");
+    const cases = await r.json();
+    caseSel.innerHTML = "";
+    cases.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.title;
+      opt.dataset.desc = c.description;
+      opt.dataset.question = c.question;
+      caseSel.appendChild(opt);
+    });
+    updateCaseDesc();
+  } catch (e) {
+    caseSel.innerHTML = '<option disabled>viz_server not reachable</option>';
+    caseDesc.textContent = "Start viz_server.py to enable live mode (otherwise use Demo controls below).";
+    runBtn.disabled = true;
+  }
+}
+
+function updateCaseDesc() {
+  const opt = caseSel.selectedOptions[0];
+  if (!opt) { caseDesc.textContent = ""; return; }
+  caseDesc.innerHTML =
+    `<em>${opt.dataset.desc || ""}</em><br/><span style="opacity:.7">Q: ${opt.dataset.question || ""}</span>`;
+}
+caseSel.addEventListener("change", updateCaseDesc);
+
+runBtn.addEventListener("click", async () => {
+  const id = caseSel.value;
+  if (!id) return;
+  runBtn.disabled = true;
+  runBtn.textContent = "Running…";
+  try {
+    const r = await fetch("/api/run", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ case_id: id }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  } catch (e) {
+    alert("Run failed: " + e.message);
+  } finally {
+    setTimeout(() => {
+      runBtn.disabled = false;
+      runBtn.textContent = "▶ Run";
+    }, 1500);
+  }
+});
+
+// Boot
+loadCases();
+// Only connect SSE if served from a same-origin viz_server (skip when opened as file://)
+if (location.protocol.startsWith("http")) connectSSE();
+else setConn("err", "Open via viz_server for live mode");
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
+from common import viz
 from compliance_agent.graph import create_graph
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ class ComplianceAgentExecutor(AgentExecutor):
             "ComplianceAgent executing | task=%s context=%s trace=%s depth=%d",
             task_id, context_id, trace_id, depth,
         )
+        viz.emit("compliance", "start", trace_id=trace_id, depth=depth)
 
         updater = TaskUpdater(event_queue, task_id, context_id)
         await updater.submit()
@@ -68,6 +70,7 @@ class ComplianceAgentExecutor(AgentExecutor):
                 name="compliance_analysis",
             )
             await updater.complete()
+            viz.emit("compliance", "complete", trace_id=trace_id, answer_chars=len(answer))
 
         except Exception as exc:
             logger.exception("ComplianceAgent execution error: %s", exc)

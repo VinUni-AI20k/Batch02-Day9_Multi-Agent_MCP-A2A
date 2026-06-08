@@ -10,6 +10,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
+from common import viz
 from law_agent.graph import create_graph
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ class LawAgentExecutor(AgentExecutor):
             "LawAgent executing | task=%s context=%s trace=%s depth=%d",
             task_id, context_id, trace_id, depth,
         )
+        viz.emit("law", "start", trace_id=trace_id, depth=depth)
 
         updater = TaskUpdater(event_queue, task_id, context_id)
         await updater.submit()
@@ -67,6 +69,7 @@ class LawAgentExecutor(AgentExecutor):
                 name="legal_analysis",
             )
             await updater.complete()
+            viz.emit("law", "complete", trace_id=trace_id, answer_chars=len(answer))
 
         except Exception as exc:
             logger.exception("LawAgent execution error: %s", exc)

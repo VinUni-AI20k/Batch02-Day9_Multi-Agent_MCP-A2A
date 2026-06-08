@@ -17,6 +17,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.constants import Send
 from langgraph.graph import END, StateGraph
 
+from common import viz
 from common.llm import get_llm
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class LawState(TypedDict):
 
 async def analyze_law(state: LawState) -> dict:
     """LLM analysis from a contract / general law perspective."""
+    viz.emit("law", "analyze", trace_id=state.get("trace_id"))
     llm = get_llm()
     messages = [
         SystemMessage(
@@ -74,6 +76,7 @@ async def check_routing(state: LawState) -> dict:
     Returns updated state flags so the routing function can read them.
     If delegation depth is already at the max, skip further delegation.
     """
+    viz.emit("law", "routing", trace_id=state.get("trace_id"))
     depth = state.get("delegation_depth", 0)
     if depth >= MAX_DELEGATION_DEPTH:
         logger.info("Max delegation depth reached (%d); skipping sub-agents", depth)
@@ -112,6 +115,11 @@ async def check_routing(state: LawState) -> dict:
     needs_tax = bool(parsed.get("needs_tax", True))
     needs_compliance = bool(parsed.get("needs_compliance", True))
     logger.info("Routing decision: needs_tax=%s needs_compliance=%s", needs_tax, needs_compliance)
+    viz.emit(
+        "law", "routing.decision",
+        trace_id=state.get("trace_id"),
+        needs_tax=needs_tax, needs_compliance=needs_compliance,
+    )
     return {"needs_tax": needs_tax, "needs_compliance": needs_compliance}
 
 
@@ -137,6 +145,8 @@ async def call_tax(state: LawState) -> dict:
     from common.a2a_client import delegate
     from common.registry_client import discover
 
+    trace_id = state.get("trace_id")
+    viz.emit("law", "dispatch", trace_id=trace_id, target="tax")
     try:
         endpoint = await discover("tax_question")
         result = await delegate(
@@ -147,9 +157,11 @@ async def call_tax(state: LawState) -> dict:
             depth=state.get("delegation_depth", 0) + 1,
         )
         logger.info("Tax Agent returned %d chars", len(result))
+        viz.emit("law", "dispatch.return", trace_id=trace_id, target="tax", chars=len(result))
         return {"tax_result": result}
     except Exception as exc:
         logger.exception("call_tax failed: %s", exc)
+        viz.emit("law", "dispatch.error", trace_id=trace_id, target="tax", error=str(exc))
         return {"tax_result": f"[Tax analysis unavailable: {exc}]"}
 
 
@@ -158,6 +170,8 @@ async def call_compliance(state: LawState) -> dict:
     from common.a2a_client import delegate
     from common.registry_client import discover
 
+    trace_id = state.get("trace_id")
+    viz.emit("law", "dispatch", trace_id=trace_id, target="compliance")
     try:
         endpoint = await discover("compliance_question")
         result = await delegate(
@@ -168,14 +182,17 @@ async def call_compliance(state: LawState) -> dict:
             depth=state.get("delegation_depth", 0) + 1,
         )
         logger.info("Compliance Agent returned %d chars", len(result))
+        viz.emit("law", "dispatch.return", trace_id=trace_id, target="compliance", chars=len(result))
         return {"compliance_result": result}
     except Exception as exc:
         logger.exception("call_compliance failed: %s", exc)
+        viz.emit("law", "dispatch.error", trace_id=trace_id, target="compliance", error=str(exc))
         return {"compliance_result": f"[Compliance analysis unavailable: {exc}]"}
 
 
 async def aggregate(state: LawState) -> dict:
     """Combine law_analysis, tax_result, and compliance_result into a final answer."""
+    viz.emit("law", "aggregate", trace_id=state.get("trace_id"))
     llm = get_llm()
 
     sections: list[str] = []
