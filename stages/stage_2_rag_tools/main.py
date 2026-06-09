@@ -81,6 +81,16 @@ LEGAL_KNOWLEDGE = [
             "public interest (Winter v. Natural Resources Defense Council, 2008)."
         ),
     },
+    {
+        "id": "labor_law",
+        "keywords": ["lao động", "sa thải", "hợp đồng lao động", "labor", "termination"],
+        "text": (
+            "Theo Bộ luật Lao động Việt Nam 2019, người sử dụng lao động có thể "
+            "đơn phương chấm dứt hợp đồng trong các trường hợp: (1) người lao động "
+            "thường xuyên không hoàn thành công việc; (2) bị ốm đau, tai nạn đã điều trị "
+            "12 tháng chưa khỏi; (3) thiên tai, hỏa hoạn; (4) người lao động đủ tuổi nghỉ hưu."
+        ),
+    },
 ]
 
 
@@ -135,7 +145,22 @@ def calculate_damages(breach_type: str, contract_value: float) -> str:
     )
 
 
-TOOLS = [search_legal_database, calculate_damages]
+@tool
+def check_statute_of_limitations(case_type: str) -> str:
+    """Check the statute of limitations for a case type.
+
+    Args:
+        case_type: Case type: contract, tort, or property.
+    """
+    limits = {
+        "contract": "4 years (UCC § 2-725)",
+        "tort": "2-3 years depending on the state",
+        "property": "5 years",
+    }
+    return limits.get(case_type.lower(), "Unknown statute of limitations")
+
+
+TOOLS = [search_legal_database, calculate_damages, check_statute_of_limitations]
 
 QUESTION = "What are the legal consequences if a company breaches a non-disclosure agreement?"
 
@@ -146,7 +171,7 @@ async def main():
     print("=" * 70)
     print()
     print("[How it works]")
-    print("  1. LLM receives tools (search_legal_database, calculate_damages)")
+    print("  1. LLM receives tools (search_legal_database, calculate_damages, check_statute_of_limitations)")
     print("  2. LLM decides which tools to call and with what arguments")
     print("  3. We execute the tools and feed results back to the LLM")
     print("  4. LLM generates a final answer grounded in retrieved data")
@@ -187,7 +212,7 @@ async def main():
         print(f"  Args: {tc['args']}")
 
         tool_fn = tool_map[tc["name"]]
-        result = await tool_fn.ainvoke(tc["args"])
+        result = tool_fn.invoke(tc["args"])
         print(f"  Result: {result[:200]}{'...' if len(result) > 200 else ''}")
         print()
 
@@ -215,5 +240,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    load_dotenv()
+    load_dotenv(override=True)
     asyncio.run(main())

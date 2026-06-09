@@ -10,7 +10,7 @@ import sys
 import httpx
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 CUSTOMER_AGENT_URL = os.getenv("CUSTOMER_AGENT_URL", "http://localhost:10100")
 

@@ -1,0 +1,43 @@
+# Core
+python-dotenv>=1.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Task 3 - Document conversion
+markitdown>=0.1.0
+
+# Task 4 - Chunking & Indexing
+langchain-text-splitters>=0.2.0
+langchain-experimental>=0.0.60
+sentence-transformers>=2.2.0
+weaviate-client>=4.5.0  # Optional alternative vector store
+# chromadb>=0.4.0        # Alternative
+# faiss-cpu>=1.7.4       # Alternative
+
+# Task 6 - Lexical search
+elasticsearch>=8.13.0
+rank-bm25>=0.2.2
+
+# Task 7 - Reranking with Qwen3-Reranker
+transformers>=4.40.0
+torch>=2.2.0
+
+# Task 8 - PageIndex
+pageindex>=0.1.0
+
+# Task 10 - Generation
+openai>=1.30.0
+# google-generativeai>=0.5.0  # Alternative: Gemini
+
+# Group project - UI
+streamlit>=1.35.0
+# gradio>=4.30.0         # Alternative
+# chainlit>=1.0.0        # Alternative for chatbot
+
+# Group project - Evaluation (choose one)
+deepeval>=1.0.0
+# ragas>=0.1.0           # Alternative
+# trulens>=1.0.0         # Alternative

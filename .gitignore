@@ -1,5 +1,5 @@
 .venv
 .env
-**cache**
+!.env.example**cache**
 .claude
 **SOLUTION**

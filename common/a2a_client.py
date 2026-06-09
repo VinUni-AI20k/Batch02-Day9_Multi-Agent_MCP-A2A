@@ -6,6 +6,7 @@ sends a message to another A2A agent and returns the text response.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from uuid import uuid4
 
@@ -31,6 +32,7 @@ async def delegate(
     context_id: str,
     trace_id: str,
     depth: int,
+    attempts: int = 3,
 ) -> str:
     """Send a question to an A2A agent and return the text response.
 
@@ -44,6 +46,32 @@ async def delegate(
     Returns:
         The agent's text response, or an empty string if none could be extracted.
     """
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return await _delegate_once(endpoint, question, context_id, trace_id, depth)
+        except Exception as exc:
+            last_error = exc
+            logger.warning(
+                "A2A delegate attempt %d/%d to %s failed: %s",
+                attempt,
+                attempts,
+                endpoint,
+                exc,
+            )
+            if attempt == attempts:
+                break
+            await asyncio.sleep(0.5 * attempt)
+    raise last_error or RuntimeError(f"A2A delegation to {endpoint} failed")
+
+
+async def _delegate_once(
+    endpoint: str,
+    question: str,
+    context_id: str,
+    trace_id: str,
+    depth: int,
+) -> str:
     async with httpx.AsyncClient(timeout=300.0) as http_client:
         # Fetch agent card
         card_url = f"{endpoint}/.well-known/agent.json"
