@@ -27,12 +27,20 @@ async def main() -> None:
 
     async with httpx.AsyncClient(timeout=300.0) as http_client:
         # Resolve agent card
-        card_url = f"{CUSTOMER_AGENT_URL}/.well-known/agent.json"
+        card_resp = None
+        tried_urls = []
         try:
-            card_resp = await http_client.get(card_url)
-            card_resp.raise_for_status()
+            for path in ("/.well-known/agent-card.json", "/.well-known/agent.json"):
+                card_url = f"{CUSTOMER_AGENT_URL}{path}"
+                tried_urls.append(card_url)
+                resp = await http_client.get(card_url)
+                if resp.is_success:
+                    card_resp = resp
+                    break
+            if card_resp is None:
+                raise RuntimeError(f"No agent card endpoint succeeded: {', '.join(tried_urls)}")
         except Exception as e:
-            print(f"ERROR: Could not reach Customer Agent at {card_url}")
+            print(f"ERROR: Could not reach Customer Agent at {CUSTOMER_AGENT_URL}")
             print(f"  {e}")
             print("Make sure all services are running (./start_all.sh)")
             sys.exit(1)
@@ -82,6 +90,17 @@ async def main() -> None:
                         p = part.root if hasattr(part, "root") else part
                         if hasattr(p, "text"):
                             result_text += p.text
+
+        if not result_text and hasattr(response, "root"):
+            root = response.root
+            result = getattr(root, "result", None)
+            status = getattr(result, "status", None)
+            message = getattr(status, "message", None)
+            parts = getattr(message, "parts", None) or []
+            for part in parts:
+                p = part.root if hasattr(part, "root") else part
+                if hasattr(p, "text"):
+                    result_text += p.text
 
         if result_text:
             print("RESPONSE:")

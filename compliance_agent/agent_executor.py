@@ -12,6 +12,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
+from common.message_utils import content_to_text
 from compliance_agent.graph import create_graph
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ class ComplianceAgentExecutor(AgentExecutor):
             for msg in reversed(result.get("messages", [])):
                 if hasattr(msg, "content") and msg.content:
                     if not isinstance(msg, HumanMessage):
-                        answer = msg.content
+                        answer = content_to_text(msg.content)
                         break
 
             if not answer:

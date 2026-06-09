@@ -64,7 +64,7 @@ User question
 | Layer | Choice |
 |---|---|
 | Agent framework | [LangGraph](https://langchain-ai.github.io/langgraph/) |
-| LLM provider | Any model via [OpenRouter](https://openrouter.ai) (OpenAI-compatible API) |
+| LLM provider | [Gemini API](https://ai.google.dev/gemini-api) by default, with [OpenRouter](https://openrouter.ai) fallback |
 | A2A transport | [a2a-sdk](https://pypi.org/project/a2a-sdk/) |
 | Registry | FastAPI + in-memory store |
 | Package manager | [uv](https://docs.astral.sh/uv/) |
@@ -107,7 +107,7 @@ Tổng kết & Q&A (15 phút)
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
-- An [OpenRouter](https://openrouter.ai) API key
+- A [Gemini API](https://ai.google.dev/gemini-api/docs/api-key) key or an [OpenRouter](https://openrouter.ai) API key
 
 ### Setup
 
@@ -119,17 +119,23 @@ uv sync
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your OpenRouter API key
+# Edit .env with your Gemini API key
 ```
 
 ### Run the Full System (Stage 5)
 
 ```bash
-# Start all 5 services (registry + 4 agents)
-./start_all.sh
+# Start the full stack (registry + 4 agents + HTML UI)
+python run_full_stack.py
 
-# In another terminal, send a test question
-uv run python test_client.py
+# Open the UI
+http://localhost:8008
+```
+
+On Windows, you can also launch the stack with:
+
+```powershell
+.\start_demo_ui.ps1
 ```
 
 ### Run Individual Stage Demos
@@ -167,7 +173,7 @@ legal_multiagent/
 ├── .env.example               # Required environment variables
 │
 ├── common/                    # Shared utilities
-│   ├── llm.py                 # get_llm() → ChatOpenAI via OpenRouter
+│   ├── llm.py                 # get_llm() → Gemini by default, OpenRouter fallback
 │   ├── a2a_client.py          # delegate() — A2A message sending
 │   └── registry_client.py     # discover() / register() — Registry API
 │
@@ -195,11 +201,23 @@ Each agent module follows the same structure:
 
 | Environment Variable | Description | Default |
 |---|---|---|
-| `OPENROUTER_API_KEY` | Your OpenRouter API key | (required) |
-| `OPENROUTER_MODEL` | Model identifier | `anthropic/claude-sonnet-4-5` |
+| `GOOGLE_API_KEY` | Your Gemini API key | (preferred) |
+| `GEMINI_MODEL` | Gemini model identifier | `gemini-2.5-flash-lite` |
+| `OPENROUTER_API_KEY` | Your OpenRouter API key | (optional fallback) |
+| `OPENROUTER_MODEL` | OpenRouter model identifier | `anthropic/claude-sonnet-4-5` |
 | `REGISTRY_URL` | Registry service URL | `http://localhost:10000` |
 
-The model is swappable to any OpenRouter-supported model (e.g., `openai/gpt-4o`, `google/gemini-2.0-flash`).
+The shared LLM factory prefers Gemini when `GOOGLE_API_KEY` is set and falls back to OpenRouter otherwise.
+
+## Deploying the UI
+
+The repository includes a single-container deployment path that runs the full Stage 5 stack behind one public UI port:
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8008`.
 
 ## Documentation Diagrams
 

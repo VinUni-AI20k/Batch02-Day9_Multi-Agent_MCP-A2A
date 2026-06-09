@@ -10,6 +10,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
+from common.message_utils import content_to_text
 from law_agent.graph import create_graph
 
 logger = logging.getLogger(__name__)
@@ -55,10 +56,10 @@ class LawAgentExecutor(AgentExecutor):
                 config={"configurable": {"thread_id": context_id}},
             )
 
-            answer = result.get("final_answer", "")
+            answer = content_to_text(result.get("final_answer", ""))
             if not answer:
                 # Fallback: use law_analysis if aggregation didn't produce output
-                answer = result.get("law_analysis", "")
+                answer = content_to_text(result.get("law_analysis", ""))
             if not answer:
                 answer = "I was unable to generate a legal analysis at this time."
 

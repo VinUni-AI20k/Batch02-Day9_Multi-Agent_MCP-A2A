@@ -25,8 +25,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PORT = 10101
-AGENT_ENDPOINT = f"http://localhost:{PORT}"
+PORT = int(os.getenv("LAW_AGENT_PORT", "10101"))
+AGENT_ENDPOINT = os.getenv("LAW_AGENT_URL", f"http://localhost:{PORT}")
 
 
 async def _register_with_retry(max_attempts: int = 10, delay: float = 2.0) -> None:
