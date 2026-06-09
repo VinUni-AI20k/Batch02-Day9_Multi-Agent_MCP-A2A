@@ -1,0 +1,11 @@
+2026-06-09 14:40:30,653 [tax_agent] INFO HTTP Request: POST http://localhost:10000/register "HTTP/1.1 200 OK"
+2026-06-09 14:40:30,655 [tax_agent] INFO Registered with registry (attempt 1)
+2026-06-09 14:40:30,656 [tax_agent] INFO Tax Agent listening on port 10102
+INFO:     Started server process [17876]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:10102 (Press CTRL+C to quit)
+2026-06-09 14:41:01,156 [tax_agent] WARNING Deprecated agent card endpoint '/.well-known/agent.json' accessed. Please use '/.well-known/agent-card.json' instead. This endpoint will be removed in a future version.
+2026-06-09 14:41:01,170 [tax_agent] INFO TaxAgent executing | task=3f506933-a172-4a64-8d53-8ec3636f1c8f context=2b9fc178-1e7d-4cd2-aa34-cf134885c277 trace=f3081726-46a1-4816-915e-a2c0fe7b0398 depth=2
+2026-06-09 14:41:02,327 [tax_agent] INFO Task not found or task_id not set. Creating new task for event (task_id: 3f506933-a172-4a64-8d53-8ec3636f1c8f, context_id: 2b9fc178-1e7d-4cd2-aa34-cf134885c277).
+2026-06-09 14:41:03,188 [tax_agent] INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"

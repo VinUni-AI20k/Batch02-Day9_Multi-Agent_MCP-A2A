@@ -1,0 +1,7 @@
+2026-06-09 14:40:30,697 [compliance_agent] INFO HTTP Request: POST http://localhost:10000/register "HTTP/1.1 200 OK"
+2026-06-09 14:40:30,699 [compliance_agent] INFO Registered with registry (attempt 1)
+2026-06-09 14:40:30,703 [compliance_agent] INFO Compliance Agent listening on port 10103
+INFO:     Started server process [4664]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:10103 (Press CTRL+C to quit)
