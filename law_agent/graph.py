@@ -17,7 +17,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.constants import Send
 from langgraph.graph import END, StateGraph
 
-from common.llm import get_llm
+from common.llm import content_to_str, get_llm
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ async def analyze_law(state: LawState) -> dict:
         HumanMessage(content=state["question"]),
     ]
     result = await llm.ainvoke(messages)
-    return {"law_analysis": result.content}
+    return {"law_analysis": content_to_str(result.content)}
 
 
 async def check_routing(state: LawState) -> dict:
@@ -94,7 +94,7 @@ async def check_routing(state: LawState) -> dict:
         HumanMessage(content=state["question"]),
     ]
     result = await llm.ainvoke(messages)
-    raw = result.content.strip()
+    raw = content_to_str(result.content).strip()
 
     # Strip markdown code fences if present
     if raw.startswith("```"):
@@ -201,7 +201,7 @@ async def aggregate(state: LawState) -> dict:
         HumanMessage(content=combined),
     ]
     result = await llm.ainvoke(messages)
-    return {"final_answer": result.content}
+    return {"final_answer": content_to_str(result.content)}
 
 
 # ---------------------------------------------------------------------------
