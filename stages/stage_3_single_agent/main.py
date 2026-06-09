@@ -8,6 +8,7 @@ Uses LangGraph's create_react_agent for the Think -> Act -> Observe loop.
 """
 
 import asyncio
+import logging
 import os
 import sys
 
@@ -172,7 +173,29 @@ def check_compliance_requirements(industry: str, company_size: str) -> str:
     )
 
 
-TOOLS = [search_legal_database, calculate_penalty, check_compliance_requirements]
+@tool
+def search_case_law(keywords: str) -> str:
+    """Search for relevant case law precedents by keyword.
+
+    Args:
+        keywords: Keywords to search for (e.g., 'breach', 'negligence', 'contract').
+    """
+    cases = {
+        "breach": "Hadley v. Baxendale (1854) - Consequential damages must be reasonably foreseeable at time of contract formation.",
+        "negligence": "Donoghue v. Stevenson (1932) - Established the modern doctrine of duty of care in negligence.",
+        "contract": "Carlill v. Carbolic Smoke Ball Co (1893) - Unilateral contracts and acceptance by performance.",
+        "privacy": "Schrems v. Data Protection Commissioner (2015) - EU-US data transfer frameworks must ensure adequate protection.",
+        "trade secret": "Kewanee Oil Co. v. Bicron Corp (1974) - State trade secret laws not preempted by federal patent law.",
+        "tax": "Gregory v. Helvering (1935) - Transactions must have economic substance beyond tax avoidance.",
+    }
+    results = []
+    for key, case in cases.items():
+        if key in keywords.lower():
+            results.append(f"[{key.title()}] {case}")
+    return "\n".join(results) if results else "No relevant case law found for these keywords."
+
+
+TOOLS = [search_legal_database, calculate_penalty, check_compliance_requirements, search_case_law]
 
 QUESTION = (
     "A tech startup with $5M revenue was caught sharing user data without consent "
@@ -206,6 +229,8 @@ async def main():
 
     llm = get_llm()
     graph = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT)
+
+    logging.basicConfig(level=logging.INFO, format="%(name)s | %(message)s")
 
     inputs = {"messages": [{"role": "user", "content": QUESTION}]}
 
