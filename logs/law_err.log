@@ -1,0 +1,17 @@
+2026-06-09 14:40:33,448 [law_agent] INFO HTTP Request: POST http://localhost:10000/register "HTTP/1.1 200 OK"
+2026-06-09 14:40:33,450 [law_agent] INFO Registered with registry (attempt 1)
+2026-06-09 14:40:33,453 [law_agent] INFO Law Agent listening on port 10101
+INFO:     Started server process [2704]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:10101 (Press CTRL+C to quit)
+2026-06-09 14:40:50,272 [law_agent] WARNING Deprecated agent card endpoint '/.well-known/agent.json' accessed. Please use '/.well-known/agent-card.json' instead. This endpoint will be removed in a future version.
+2026-06-09 14:40:50,281 [law_agent] INFO LawAgent executing | task=55d29453-fadc-4e53-9d79-628f6e81d8c2 context=2b9fc178-1e7d-4cd2-aa34-cf134885c277 trace=f3081726-46a1-4816-915e-a2c0fe7b0398 depth=1
+2026-06-09 14:40:51,477 [law_agent] INFO Task not found or task_id not set. Creating new task for event (task_id: 55d29453-fadc-4e53-9d79-628f6e81d8c2, context_id: 2b9fc178-1e7d-4cd2-aa34-cf134885c277).
+2026-06-09 14:40:52,448 [law_agent] INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+2026-06-09 14:40:59,969 [law_agent] INFO Routing decision: needs_tax=True needs_compliance=False
+2026-06-09 14:41:00,587 [law_agent] INFO HTTP Request: GET http://localhost:10000/discover/tax_question "HTTP/1.1 200 OK"
+2026-06-09 14:41:01,163 [law_agent] INFO HTTP Request: GET http://localhost:10102/.well-known/agent.json "HTTP/1.1 200 OK"
+2026-06-09 14:41:04,236 [law_agent] INFO HTTP Request: POST http://localhost:10102 "HTTP/1.1 200 OK"
+2026-06-09 14:41:04,237 [law_agent] INFO Tax Agent returned 503 chars
+2026-06-09 14:41:05,137 [law_agent] INFO HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"

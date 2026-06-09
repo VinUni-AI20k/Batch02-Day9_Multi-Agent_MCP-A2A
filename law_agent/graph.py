@@ -79,38 +79,10 @@ async def check_routing(state: LawState) -> dict:
         logger.info("Max delegation depth reached (%d); skipping sub-agents", depth)
         return {"needs_tax": False, "needs_compliance": False}
 
-    llm = get_llm()
-    messages = [
-        SystemMessage(
-            content=(
-                'You are a legal routing expert. Based on the question, decide whether '
-                'specialist sub-agents are needed.\n'
-                'Reply with ONLY valid JSON — no markdown, no extra text:\n'
-                '{"needs_tax": <true|false>, "needs_compliance": <true|false>}\n\n'
-                'needs_tax = true  → question involves tax law, IRS, tax evasion, penalties\n'
-                'needs_compliance = true → question involves regulatory compliance, SEC, SOX, AML, FCPA'
-            )
-        ),
-        HumanMessage(content=state["question"]),
-    ]
-    result = await llm.ainvoke(messages)
-    raw = result.content.strip()
-
-    # Strip markdown code fences if present
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip()
-
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        logger.warning("Routing LLM returned non-JSON: %r — defaulting to both=True", raw)
-        parsed = {"needs_tax": True, "needs_compliance": True}
-
-    needs_tax = bool(parsed.get("needs_tax", True))
-    needs_compliance = bool(parsed.get("needs_compliance", True))
+    question_lower = state["question"].lower()
+    needs_tax = any(kw in question_lower for kw in ["tax", "irs", "thuế", "evasion", "fbar", "fatca", "pricing"])
+    needs_compliance = any(kw in question_lower for kw in ["compliance", "sec", "sox", "sarbanes", "fcpa", "aml", "regulation", "bribery"])
+    
     logger.info("Routing decision: needs_tax=%s needs_compliance=%s", needs_tax, needs_compliance)
     return {"needs_tax": needs_tax, "needs_compliance": needs_compliance}
 
