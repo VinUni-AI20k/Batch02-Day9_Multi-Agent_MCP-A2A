@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Legal AI — Multi-Agent Chat</title>
+<style>
+:root {
+  --bg:#0d0f1a; --s1:#141828; --s2:#1c2038; --s3:#252a48;
+  --border:#2a3060; --border2:#3a4080;
+  --c-customer:#00d4aa; --c-law:#7c6fff; --c-tax:#ffd93d; --c-compliance:#ff9f43;
+  --c-active:#7c6fff; --c-done:#22c55e; --c-error:#ef4444; --c-idle:#3a4070;
+  --text:#e8eaf6; --muted:#7986a8; --muted2:#4a5580;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column}
+
+/* ── Header ── */
+header{
+  background:var(--s1);border-bottom:1px solid var(--border);
+  padding:11px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0;
+}
+.logo{width:30px;height:30px;background:linear-gradient(135deg,var(--c-law),var(--c-customer));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+header h1{font-size:.95rem;font-weight:700}
+header .sub{font-size:.72rem;color:var(--muted);margin-top:1px}
+.pill{font-size:.63rem;padding:2px 8px;border-radius:99px;border:1px solid;font-weight:700;flex-shrink:0}
+.pill.purple{background:rgba(124,111,255,.15);color:#a99cff;border-color:rgba(124,111,255,.4)}
+.pill.green{background:rgba(0,212,170,.12);color:#00d4aa;border-color:rgba(0,212,170,.35)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.sys-indicator{display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--muted)}
+.sys-dot{width:8px;height:8px;border-radius:50%;background:var(--c-idle)}
+.sys-dot.ok{background:var(--c-done);box-shadow:0 0 6px var(--c-done)}
+.sys-dot.partial{background:var(--c-tax)}
+.sys-dot.err{background:var(--c-error)}
+
+/* ── Main Layout ── */
+.main{flex:1;display:flex;min-height:0;overflow:hidden}
+
+/* ══════════════════════════════════════════
+   LEFT SIDEBAR — Pipeline Visualizer
+══════════════════════════════════════════ */
+.sidebar{
+  width:290px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sidebar-title{
+  padding:12px 16px 10px;font-size:.67rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;
+}
+.sidebar-title .step-label{
+  margin-left:auto;font-size:.7rem;font-weight:600;color:var(--c-active);
+  letter-spacing:0;text-transform:none;
+}
+
+/* ── SVG Flow Diagram ── */
+.flow-diagram{padding:12px 10px 0;flex-shrink:0}
+svg#pipeline{width:100%;height:auto}
+
+/* SVG node styles */
+.n-rect{rx:10;ry:10;fill:var(--s2);stroke:var(--c-idle);stroke-width:1.5;transition:all .3s}
+.n-rect.active{stroke:var(--c-active);filter:drop-shadow(0 0 7px var(--c-active))}
+.n-rect.done{stroke:var(--c-done);filter:drop-shadow(0 0 5px rgba(34,197,94,.5))}
+.n-rect.error{stroke:var(--c-error)}
+
+.n-icon{font-size:15px;dominant-baseline:middle;text-anchor:middle}
+.n-name{font-size:11px;font-weight:700;fill:var(--text);dominant-baseline:middle;text-anchor:middle}
+.n-port{font-size:9px;fill:var(--muted);dominant-baseline:middle;text-anchor:middle}
+.n-status{font-size:8.5px;font-weight:600;dominant-baseline:middle;text-anchor:middle;fill:var(--muted)}
+
+/* edges */
+.edge{stroke:var(--c-idle);stroke-width:1.5;fill:none;transition:stroke .3s}
+.edge.active{stroke:var(--c-active);stroke-dasharray:5 3;animation:dash .5s linear infinite}
+.edge.done{stroke:var(--c-done)}
+@keyframes dash{to{stroke-dashoffset:-16}}
+
+/* data packets */
+.pkt{opacity:0}
+
+/* ── Step pips ── */
+.pips{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:8px 10px;
+}
+.pip{width:7px;height:7px;border-radius:50%;background:var(--c-idle);transition:all .25s;flex-shrink:0}
+.pip.active{background:var(--c-active);box-shadow:0 0 6px var(--c-active);transform:scale(1.3)}
+.pip.done{background:var(--c-done)}
+
+/* ── Execution Log (scrollable) ── */
+.exec-log{
+  flex:1;overflow-y:auto;padding:6px 10px 6px;
+  display:flex;flex-direction:column;gap:2px;min-height:0;
+  border-top:1px solid var(--border);
+}
+.log-entry{font-size:.7rem;display:flex;gap:6px;padding:2px 0;line-height:1.5}
+.log-t{color:var(--muted2);font-family:monospace;white-space:nowrap;min-width:46px}
+.log-a{font-weight:700;white-space:nowrap;min-width:68px}
+.log-a.customer{color:var(--c-customer)} .log-a.law{color:var(--c-law)}
+.log-a.tax{color:var(--c-tax)} .log-a.compliance{color:var(--c-compliance)}
+.log-a.system{color:var(--muted)}
+.log-m{color:var(--text);flex:1}
+.log-entry.ok .log-m{color:var(--c-done)}
+.log-entry.err .log-m{color:var(--c-error)}
+
+/* ── Timing ── */
+.timing-box{
+  padding:8px 12px;border-top:1px solid var(--border);background:var(--s2);flex-shrink:0;
+}
+.t-row{display:flex;justify-content:space-between;font-size:.71rem;padding:2px 0}
+.t-label{color:var(--muted)} .t-val{font-family:monospace;font-weight:700;color:var(--muted)}
+.t-val.done{color:var(--c-done)}
+
+/* ══════════════════════════════════════════
+   RIGHT — Chat Window
+══════════════════════════════════════════ */
+.chat-window{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0}
+
+.messages{
+  flex:1;overflow-y:auto;padding:28px 36px;
+  display:flex;flex-direction:column;gap:22px;min-height:0;
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* Welcome */
+.welcome{text-align:center;padding:48px 20px;color:var(--muted)}
+.welcome .w-icon{font-size:3.2rem;margin-bottom:18px}
+.welcome h2{font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:10px}
+.welcome p{font-size:.88rem;line-height:1.7;max-width:440px;margin:0 auto 24px}
+.welcome-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px;margin:0 auto}
+.chip-btn{
+  background:var(--s2);border:1px solid var(--border);border-radius:99px;
+  padding:9px 18px;font-size:.82rem;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.chip-btn:hover{border-color:var(--c-active);color:var(--text);background:rgba(124,111,255,.1)}
+
+/* Message rows */
+.msg-row{display:flex;gap:12px;max-width:900px;width:100%}
+.msg-row.user{align-self:flex-end;flex-direction:row-reverse}
+.msg-row.assistant{align-self:flex-start}
+
+.msg-avatar{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-top:2px;
+}
+.msg-row.user .msg-avatar{background:linear-gradient(135deg,#667eea,#764ba2)}
+.msg-row.assistant .msg-avatar{background:linear-gradient(135deg,var(--c-law),var(--c-customer))}
+
+.msg-body{display:flex;flex-direction:column;gap:5px;max-width:calc(100% - 52px)}
+.msg-meta{font-size:.68rem;color:var(--muted);padding:0 4px}
+.msg-row.user .msg-meta{text-align:right}
+
+.msg-bubble{
+  padding:14px 18px;border-radius:16px;font-size:.88rem;line-height:1.75;word-break:break-word;
+}
+.msg-row.user .msg-bubble{
+  background:linear-gradient(135deg,rgba(124,111,255,.22),rgba(124,111,255,.12));
+  border:1px solid rgba(124,111,255,.28);border-bottom-right-radius:4px;
+}
+.msg-row.assistant .msg-bubble{
+  background:var(--s2);border:1px solid var(--border);border-bottom-left-radius:4px;
+}
+.msg-bubble h3{font-size:.9rem;font-weight:700;margin:12px 0 5px;color:#d4d8ff}
+.msg-bubble h3:first-child{margin-top:0}
+.msg-bubble p{margin-bottom:8px} .msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble ul{padding-left:18px;margin-bottom:8px} .msg-bubble li{margin-bottom:3px}
+.msg-bubble hr{border:none;border-top:1px solid var(--border);margin:10px 0}
+.msg-bubble strong{color:#d4d8ff}
+.msg-bubble em,.disclaimer{font-size:.72rem;color:var(--muted);font-style:italic;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:block}
+
+.agent-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.agent-tag{font-size:.64rem;padding:2px 8px;border-radius:4px;font-weight:700;border:1px solid}
+.agent-tag.law{background:rgba(124,111,255,.15);color:#a99cff;border-color:rgba(124,111,255,.3)}
+.agent-tag.tax{background:rgba(255,217,61,.12);color:#ffd93d;border-color:rgba(255,217,61,.3)}
+.agent-tag.compliance{background:rgba(255,159,67,.12);color:#ff9f43;border-color:rgba(255,159,67,.3)}
+
+/* Typing */
+.typing-bubble{
+  background:var(--s2);border:1px solid var(--border);border-bottom-left-radius:4px;
+  padding:14px 18px;border-radius:16px;display:flex;align-items:center;gap:5px;
+}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bounce .9s infinite}
+.typing-dot:nth-child(2){animation-delay:.15s} .typing-dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* ── Input Bar ── */
+.input-bar{
+  border-top:1px solid var(--border);background:var(--s1);
+  padding:14px 24px;display:flex;gap:12px;align-items:flex-end;flex-shrink:0;
+}
+.input-wrap{
+  flex:1;background:var(--s2);border:1px solid var(--border);border-radius:14px;
+  display:flex;align-items:flex-end;padding:10px 14px;gap:10px;transition:border-color .2s;
+}
+.input-wrap:focus-within{border-color:rgba(124,111,255,.5)}
+textarea#input{
+  flex:1;background:transparent;border:none;outline:none;resize:none;
+  color:var(--text);font-size:.9rem;font-family:inherit;line-height:1.5;
+  max-height:120px;overflow-y:auto;min-height:24px;
+}
+textarea#input::placeholder{color:var(--muted2)}
+.send-btn{
+  width:42px;height:42px;border-radius:10px;border:none;cursor:pointer;
+  background:var(--c-active);color:#fff;flex-shrink:0;
+  transition:all .15s;display:flex;align-items:center;justify-content:center;
+}
+.send-btn:hover{background:#9d96ff;transform:scale(1.05)}
+.send-btn:disabled{background:var(--c-idle);cursor:not-allowed;transform:none}
+.input-footer{font-size:.7rem;color:var(--muted2);padding:0 24px 10px;display:flex;gap:8px}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">⚖️</div>
+  <div>
+    <h1>Legal Multi-Agent System</h1>
+    <div class="sub">LangGraph A2A · 4 agents · qwen2.5:3b</div>
+  </div>
+  <span class="pill purple">A2A</span>
+  <span class="pill green">Day 9</span>
+  <div class="hdr-right">
+    <div class="sys-indicator">
+      <span class="sys-dot" id="sys-dot"></span>
+      <span id="sys-label">checking...</span>
+    </div>
+    <button onclick="checkHealth()" style="background:var(--s3);border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:.72rem">⟳</button>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- ════════════════════════════════════════
+     SIDEBAR — Live Pipeline Visualizer
+════════════════════════════════════════ -->
+<div class="sidebar">
+  <div class="sidebar-title">
+    Pipeline Thực Thi
+    <span class="step-label" id="step-label">idle</span>
+  </div>
+
+  <!-- SVG Animated Flow -->
+  <div class="flow-diagram">
+    <svg id="pipeline" viewBox="0 0 270 320" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr"        markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#2a3060"/></marker>
+        <marker id="arr-active" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#7c6fff"/></marker>
+        <marker id="arr-done"   markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#22c55e"/></marker>
+      </defs>
+
+      <!-- Registry -->
+      <g id="svg-registry" transform="translate(135,30)">
+        <rect class="n-rect" id="nr-registry" width="120" height="42" x="-60" y="-21"/>
+        <text class="n-icon" y="-5">🗂</text>
+        <text class="n-name" y="8">Registry</text>
+        <text class="n-port" y="18">:10000</text>
+      </g>
+
+      <!-- Edge: Registry ↔ Customer (dashed discover) -->
+      <line id="e-reg-cust" class="edge" x1="135" y1="51" x2="135" y2="73" stroke-dasharray="3 2"/>
+
+      <!-- Customer Agent -->
+      <g id="svg-customer" transform="translate(135,94)">
+        <rect class="n-rect" id="nr-customer" width="130" height="46" x="-65" y="-23" style="stroke:var(--c-customer)"/>
+        <text class="n-icon" y="-6">👤</text>
+        <text class="n-name" y="8">Customer Agent</text>
+        <text class="n-port" y="19">:10100  entry</text>
+        <text class="n-status" id="ns-customer" y="30" fill="var(--muted)">idle</text>
+      </g>
+
+      <!-- Edge: Customer → Law -->
+      <line id="e-cust-law" class="edge" x1="135" y1="117" x2="135" y2="141" marker-end="url(#arr)"/>
+
+      <!-- Law Agent -->
+      <g id="svg-law" transform="translate(135,164)">
+        <rect class="n-rect" id="nr-law" width="130" height="46" x="-65" y="-23" style="stroke:var(--c-law)"/>
+        <text class="n-icon" y="-6">⚖️</text>
+        <text class="n-name" y="8">Law Agent</text>
+        <text class="n-port" y="19">:10101  orchestrator</text>
+        <text class="n-status" id="ns-law" y="30" fill="var(--muted)">idle</text>
+      </g>
+
+      <!-- Edge: Law → Tax (left branch) -->
+      <path id="e-law-tax" class="edge" d="M100,178 Q60,210 65,240" marker-end="url(#arr)"/>
+      <!-- Edge: Law → Compliance (right branch) -->
+      <path id="e-law-comp" class="edge" d="M170,178 Q210,210 205,240" marker-end="url(#arr)"/>
+
+      <!-- Tax Agent -->
+      <g id="svg-tax" transform="translate(65,262)">
+        <rect class="n-rect" id="nr-tax" width="110" height="46" x="-55" y="-23" style="stroke:var(--c-tax)"/>
+        <text class="n-icon" y="-6">💰</text>
+        <text class="n-name" y="8">Tax Agent</text>
+        <text class="n-port" y="19">:10102</text>
+        <text class="n-status" id="ns-tax" y="30" fill="var(--muted)">idle</text>
+      </g>
+
+      <!-- Compliance Agent -->
+      <g id="svg-compliance" transform="translate(205,262)">
+        <rect class="n-rect" id="nr-compliance" width="110" height="46" x="-55" y="-23" style="stroke:var(--c-compliance)"/>
+        <text class="n-icon" y="-6">📋</text>
+        <text class="n-name" y="8">Compliance</text>
+        <text class="n-port" y="19">:10103</text>
+        <text class="n-status" id="ns-compliance" y="30" fill="var(--muted)">idle</text>
+      </g>
+
+      <!-- Return paths (faint) -->
+      <path id="e-tax-ret"  class="edge" d="M25,250 Q10,185 70,175" stroke-dasharray="3 2" marker-end="url(#arr)" opacity=".5"/>
+      <path id="e-comp-ret" class="edge" d="M245,250 Q260,185 200,175" stroke-dasharray="3 2" marker-end="url(#arr)" opacity=".5"/>
+
+      <!-- Data packets -->
+      <circle id="pkt-a" r="5" fill="var(--c-customer)" opacity="0"/>
+      <circle id="pkt-b" r="5" fill="var(--c-tax)"      opacity="0"/>
+      <circle id="pkt-c" r="5" fill="var(--c-compliance)" opacity="0"/>
+      <circle id="pkt-d" r="5" fill="var(--c-law)"      opacity="0"/>
+    </svg>
+  </div>
+
+  <!-- Step pips -->
+  <div class="pips" id="pips">
+    <div class="pip" id="pip0" title="Receive"></div>
+    <div class="pip" id="pip1" title="→ Law"></div>
+    <div class="pip" id="pip2" title="Analyze"></div>
+    <div class="pip" id="pip3" title="Dispatch"></div>
+    <div class="pip" id="pip4" title="Tax+Comp"></div>
+    <div class="pip" id="pip5" title="Return"></div>
+  </div>
+
+  <!-- Exec Log -->
+  <div class="exec-log" id="exec-log">
+    <div class="log-entry"><span class="log-t">—</span><span class="log-a system">SYS</span><span class="log-m" style="color:var(--muted)">Ready</span></div>
+  </div>
+
+  <!-- Timing -->
+  <div class="timing-box">
+    <div class="t-row"><span class="t-label">analyze+route</span><span class="t-val" id="t-analyze">—</span></div>
+    <div class="t-row"><span class="t-label">tax ‖ compliance</span><span class="t-val" id="t-spec">—</span></div>
+    <div class="t-row"><span class="t-label">⏱ total</span><span class="t-val" id="t-total">—</span></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     CHAT WINDOW
+════════════════════════════════════════ -->
+<div class="chat-window">
+  <div class="messages" id="messages">
+    <div class="welcome" id="welcome">
+      <div class="w-icon">⚖️</div>
+      <h2>Legal AI Assistant</h2>
+      <p>Hệ thống đa tác nhân: <strong>Law · Tax · Compliance</strong> phân tích song song. Đặt câu hỏi bằng tiếng Việt hoặc tiếng Anh.</p>
+      <div class="welcome-chips">
+        <button class="chip-btn" onclick="useExample(this)">Công ty vi phạm hợp đồng và trốn thuế thì bị phạt gì?</button>
+        <button class="chip-btn" onclick="useExample(this)">Giám đốc có bị truy cứu hình sự khi công ty trốn thuế không?</button>
+        <button class="chip-btn" onclick="useExample(this)">What are the SEC penalties for insider trading?</button>
+        <button class="chip-btn" onclick="useExample(this)">Công ty nước ngoài vi phạm FCPA bị xử lý như thế nào?</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <div class="input-wrap">
+      <textarea id="input" rows="1"
+        placeholder="Đặt câu hỏi pháp lý... (Enter gửi · Shift+Enter xuống dòng)"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    </div>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Gửi">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+  <div class="input-footer">
+    <span>⚖️ Law · 💰 Tax · 📋 Compliance</span>
+    <span style="margin-left:auto">~30–40s · qwen2.5:3b</span>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ────────────────────────────────
+// Utilities
+// ────────────────────────────────
+const $ = id => document.getElementById(id)
+const AGENTS = [
+  {id:'registry',   port:10000, path:'/health'},
+  {id:'customer',   port:10100, path:'/.well-known/agent.json'},
+  {id:'law',        port:10101, path:'/.well-known/agent.json'},
+  {id:'tax',        port:10102, path:'/.well-known/agent.json'},
+  {id:'compliance', port:10103, path:'/.well-known/agent.json'},
+]
+let t0=0, running=false
+const ms = n => n<1000 ? n+'ms' : (n/1000).toFixed(1)+'s'
+const genId = () => 'trace_'+Math.random().toString(36).slice(2,10)
+const delay = ms => new Promise(r=>setTimeout(r,ms))
+const ts = () => new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
+
+// ────────────────────────────────
+// Health check
+// ────────────────────────────────
+async function checkHealth(){
+  const results = await Promise.all(AGENTS.map(async a=>{
+    try{ const r=await fetch(`http://localhost:${a.port}${a.path}`,{signal:AbortSignal.timeout(2000)}); return r.ok }
+    catch{ return false }
+  }))
+  let online=0
+  AGENTS.forEach((a,i)=>{
+    const rect=$(`nr-${a.id}`), ns=$(`ns-${a.id}`)
+    if(rect && !running){
+      rect.className.baseVal='n-rect '+(results[i]?'':'error')
+    }
+    if(ns && !running){
+      ns.textContent=results[i]?'online':'offline'
+      ns.setAttribute('fill',results[i]?'var(--c-done)':'var(--c-error)')
+    }
+    if(results[i]) online++
+  })
+  const dot=$('sys-dot'), lbl=$('sys-label')
+  if(online===AGENTS.length){ dot.className='sys-dot ok'; lbl.textContent=`${online}/${AGENTS.length} online` }
+  else if(online>0){ dot.className='sys-dot partial'; lbl.textContent=`${online}/${AGENTS.length} online` }
+  else{ dot.className='sys-dot err'; lbl.textContent='agents offline' }
+  return results
+}
+
+// ────────────────────────────────
+// SVG node / edge state
+// ────────────────────────────────
+function svgNode(id, state, label=''){
+  const rect=$(`nr-${id}`), ns=$(`ns-${id}`)
+  if(rect) rect.className.baseVal='n-rect '+state
+  if(ns){
+    const colors={idle:'var(--muted)',active:'var(--c-active)',done:'var(--c-done)',error:'var(--c-error)'}
+    ns.textContent=label||state
+    ns.setAttribute('fill',colors[state]||'var(--muted)')
+  }
+}
+function svgEdge(id, state){
+  const el=$(id)
+  if(!el) return
+  el.className.baseVal='edge '+state
+  const mk={active:'url(#arr-active)',done:'url(#arr-done)',idle:'url(#arr)'}
+  if(el.getAttribute('marker-end')) el.setAttribute('marker-end',mk[state]||'url(#arr)')
+}
+
+// ────────────────────────────────
+// Packet animation
+// ────────────────────────────────
+function animPacket(pktId, pathEl, dur){
+  const pkt=$(pktId)
+  if(!pkt||!pathEl) return Promise.resolve()
+  return new Promise(resolve=>{
+    pkt.style.opacity='1'
+    const isPath=pathEl.tagName==='path'
+    const len=isPath?pathEl.getTotalLength():null
+    const start=performance.now()
+    function frame(now){
+      const t=Math.min((now-start)/dur,1)
+      let x,y
+      if(isPath){ const pt=pathEl.getPointAtLength(t*len); x=pt.x; y=pt.y }
+      else{ x=+pathEl.getAttribute('x1')+t*(+pathEl.getAttribute('x2')-+pathEl.getAttribute('x1')); y=+pathEl.getAttribute('y1')+t*(+pathEl.getAttribute('y2')-+pathEl.getAttribute('y1')) }
+      pkt.setAttribute('cx',x); pkt.setAttribute('cy',y)
+      if(t<1) requestAnimationFrame(frame)
+      else{ pkt.style.opacity='0'; resolve() }
+    }
+    requestAnimationFrame(frame)
+  })
+}
+
+// ────────────────────────────────
+// Step pips
+// ────────────────────────────────
+const PIP_LABELS=['Receive','→ Law','Analyze','Dispatch','Tax+Comp','Return']
+function setPip(i){
+  for(let j=0;j<6;j++){
+    const p=$('pip'+j)
+    if(!p) continue
+    p.className='pip '+(j<i?'done':j===i?'active':'')
+  }
+  $('step-label').textContent=PIP_LABELS[i]||'done'
+}
+function allPipsDone(){
+  for(let j=0;j<6;j++){ const p=$('pip'+j); if(p) p.className='pip done' }
+  $('step-label').textContent='✓ Complete'
+}
+
+// ────────────────────────────────
+// Execution log (sidebar)
+// ────────────────────────────────
+function slog(agent, msg, cls=''){
+  const area=$('exec-log')
+  const div=document.createElement('div')
+  div.className='log-entry '+cls
+  div.innerHTML=`<span class="log-t">${ts().slice(0,8)}</span><span class="log-a ${agent.toLowerCase()}">${agent}</span><span class="log-m">${msg}</span>`
+  area.appendChild(div)
+  area.scrollTop=area.scrollHeight
+}
+function clearLog(){
+  $('exec-log').innerHTML=''
+}
+function setTiming(id,val){
+  const el=$(id); if(!el) return
+  el.textContent=val; el.className='t-val done'
+}
+
+// ────────────────────────────────
+// Chat helpers
+// ────────────────────────────────
+function hideWelcome(){ const w=$('welcome'); if(w) w.remove() }
+
+function appendMsg(role, html, tags=[]){
+  hideWelcome()
+  const msgs=$('messages')
+  const row=document.createElement('div')
+  row.className='msg-row '+role
+  const avatar=document.createElement('div')
+  avatar.className='msg-avatar'
+  avatar.textContent=role==='user'?'👤':'⚖️'
+  const body=document.createElement('div')
+  body.className='msg-body'
+  const meta=document.createElement('div')
+  meta.className='msg-meta'
+  meta.textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})
+  const bubble=document.createElement('div')
+  bubble.className='msg-bubble'
+  bubble.innerHTML=html
+  body.appendChild(meta); body.appendChild(bubble)
+  if(tags.length){
+    const tEl=document.createElement('div'); tEl.className='agent-tags'
+    tags.forEach(t=>{ const s=document.createElement('span'); s.className='agent-tag '+t.cls; s.textContent=t.label; tEl.appendChild(s) })
+    body.appendChild(tEl)
+  }
+  row.appendChild(avatar); row.appendChild(body)
+  msgs.appendChild(row)
+  msgs.scrollTop=msgs.scrollHeight
+  return bubble
+}
+
+function appendTyping(){
+  hideWelcome()
+  const msgs=$('messages')
+  const row=document.createElement('div')
+  row.id='typing-row'; row.className='msg-row assistant'
+  row.innerHTML=`<div class="msg-avatar">⚖️</div>
+    <div class="msg-body">
+      <div class="msg-meta">${new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="typing-bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+    </div>`
+  msgs.appendChild(row); msgs.scrollTop=msgs.scrollHeight
+  return row
+}
+function removeTyping(){ const t=$('typing-row'); if(t) t.remove() }
+
+function renderMd(text){
+  return text
+    .replace(/^#{1,2}\s+(.+)$/gm,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/<\/ul>\s*<ul>/g,'')
+    .replace(/---+/g,'<hr>')
+    .replace(/\n\n+/g,'</p><p>')
+    .replace(/^(?!<[huli\/]|$)(.+)$/gm,'<p>$1</p>')
+    .replace(/<p><\/p>/g,'')
+}
+
+function useExample(btn){ const inp=$('input'); inp.value=btn.textContent.trim(); autoResize(inp); inp.focus() }
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px' }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage() } }
+
+// ────────────────────────────────
+// MAIN SEND + PIPELINE ANIMATION
+// ────────────────────────────────
+function resetPipeline(){
+  ['customer','law','tax','compliance','registry'].forEach(n=>svgNode(n,'idle','idle'))
+  ;['e-reg-cust','e-cust-law','e-law-tax','e-law-comp','e-tax-ret','e-comp-ret'].forEach(e=>svgEdge(e,'idle'))
+  for(let j=0;j<6;j++){ const p=$('pip'+j); if(p) p.className='pip' }
+  $('step-label').textContent='idle'
+  ;['t-analyze','t-spec','t-total'].forEach(id=>{ const el=$(id); if(el){ el.textContent='—'; el.className='t-val' }})
+}
+
+async function sendMessage(){
+  if(running) return
+  const inp=$('input')
+  const q=inp.value.trim()
+  if(!q) return
+  inp.value=''; autoResize(inp)
+  running=true; $('send-btn').disabled=true
+
+  appendMsg('user', q.replace(/</g,'&lt;').replace(/>/g,'&gt;'))
+  appendTyping()
+  clearLog()
+  resetPipeline()
+  t0=Date.now()
+
+  // ── Step 0: Customer receives ──
+  setPip(0)
+  svgNode('customer','active','receiving')
+  svgEdge('e-reg-cust','active')
+  slog('Customer','Received query, discovering via Registry…')
+  await animPacket('pkt-a',$('e-reg-cust'),500)
+  svgEdge('e-reg-cust','done')
+
+  // ── Step 1: → Law ──
+  setPip(1)
+  svgNode('customer','active','routing')
+  svgEdge('e-cust-law','active')
+  slog('Customer','Forwarding to Law Agent…')
+  await animPacket('pkt-a',$('e-cust-law'),500)
+  svgNode('customer','done','forwarded')
+
+  // ── Step 2: Law analyzes ──
+  setPip(2)
+  svgNode('law','active','analyze+route')
+  svgEdge('e-cust-law','done')
+  slog('Law','analyze_and_route → LLM call…')
+  const analyzeT=Date.now()
+
+  // ── API call fires here ──
+  const traceId=genId()
+  const payload={
+    id:traceId, jsonrpc:'2.0', method:'message/send',
+    params:{ message:{ role:'user', parts:[{kind:'text',text:q}], messageId:traceId } }
+  }
+
+  // Progress animation while waiting
+  const dispatchTimer=setTimeout(async()=>{
+    setTiming('t-analyze', ms(Date.now()-analyzeT))
+    svgNode('law','active','dispatching')
+    slog('Law','Routing → dispatch Tax + Compliance parallel')
+    // ── Step 3: Dispatch ──
+    setPip(3)
+    svgEdge('e-law-tax','active'); svgEdge('e-law-comp','active')
+    svgNode('tax','active','working'); svgNode('compliance','active','working')
+    await Promise.all([
+      animPacket('pkt-b',$('e-law-tax'),700),
+      animPacket('pkt-c',$('e-law-comp'),700),
+    ])
+    // ── Step 4: Workers running ──
+    setPip(4)
+    slog('Tax','react analysis running…')
+    slog('Compliance','regulatory check running…')
+  }, 5000)
+
+  let answer=null, apiErr=null
+  try{
+    const resp=await fetch('http://localhost:10100',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+      signal:AbortSignal.timeout(120000)
+    })
+    const data=await resp.json()
+    if(data.error) throw new Error(`[${data.error.code}] ${data.error.message}`)
+    try{
+      const arts=data?.result?.artifacts||[]
+      if(arts.length) answer=arts.flatMap(a=>(a.parts||[]).map(p=>p.text||p.root?.text||'')).join('\n').trim()
+      if(!answer){ const parts=data?.result?.status?.message?.parts||[]; answer=parts.map(p=>p.text||p.root?.text||'').join('\n').trim() }
+      if(!answer) answer=JSON.stringify(data,null,2)
+    } catch{ answer=JSON.stringify(data,null,2) }
+  } catch(e){ apiErr=e.message }
+
+  clearTimeout(dispatchTimer)
+  const total=Date.now()-t0
+
+  // ── Step 5: Return ──
+  setPip(5)
+  svgEdge('e-law-tax','done'); svgEdge('e-law-comp','done')
+  svgNode('tax','done','done'); svgNode('compliance','done','done')
+  await Promise.all([
+    animPacket('pkt-b',$('e-tax-ret'),500),
+    animPacket('pkt-c',$('e-comp-ret'),500),
+  ])
+  svgEdge('e-tax-ret','done'); svgEdge('e-comp-ret','done')
+  svgNode('law','done','aggregated')
+  await animPacket('pkt-d',$('e-cust-law'),500)
+  svgNode('customer','done','answered')
+  allPipsDone()
+
+  setTiming('t-spec', ms(Math.max(0,total-6000)))
+  setTiming('t-total', ms(total))
+  slog('Customer',`Done — ${ms(total)}`,'ok')
+
+  removeTyping()
+
+  if(apiErr){
+    appendMsg('assistant',
+      `<strong>⚠ Không thể kết nối agents</strong><br><br><em>${apiErr}</em><br><br>Chạy:<br><code>cd "E:\\AI20K\\Day9\\Batch02-Day9_Multi-Agent_MCP-A2A"</code><br><code>.\\start_all.ps1</code>`)
+  } else {
+    let main=answer, disc=''
+    const di=answer.lastIndexOf('*This analysis')
+    if(di>0){ main=answer.slice(0,di).trim(); disc=answer.slice(di) }
+    const rendered=renderMd(main)+(disc?`<div class="disclaimer">${disc}</div>`:'')
+    appendMsg('assistant',rendered,[
+      {cls:'law',label:'⚖️ Law'},
+      {cls:'tax',label:'💰 Tax'},
+      {cls:'compliance',label:'📋 Compliance'},
+    ])
+  }
+
+  running=false; $('send-btn').disabled=false; $('input').focus()
+}
+
+// ── Init ──
+checkHealth()
+setInterval(checkHealth,25000)
+$('input').focus()
+</script>
+</body>
+</html>

@@ -1,46 +1,37 @@
-"""Tax Agent LangGraph definition.
+"""Tax Agent LangGraph definition — single-shot LLM node.
 
-Uses create_react_agent with a tax-specialised system prompt.
-No tools — it answers purely from LLM knowledge.
+Replaced create_react_agent (which runs a multi-turn tool loop even with no tools)
+with a direct ainvoke call, saving ~1 extra LLM round-trip per request.
 """
 
 from __future__ import annotations
 
-from langgraph.prebuilt import create_react_agent
+from typing import TypedDict
 
-from common.llm import get_llm
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langgraph.graph import END, StateGraph
 
-TAX_SYSTEM_PROMPT = """You are a specialist tax attorney and CPA with expertise in:
+from common.llm import content_to_str, get_llm
 
-- Corporate tax law and compliance (federal, state, and international)
-- Tax evasion vs. tax avoidance — legal distinctions and consequences
-- IRS enforcement mechanisms, audits, and criminal referrals
-- Penalties and back-tax calculations under IRC §§ 6651, 6662, 6663
-- FBAR/FATCA requirements for offshore accounts
-- Transfer pricing regulations (IRC § 482)
-- Tax fraud statutes (18 U.S.C. § 7201 – § 7207)
-- Corporate tax liability: officers, directors, and responsible persons
-- Voluntary disclosure programs and settlement options
+TAX_SYSTEM_PROMPT = """You are a specialist tax attorney. Respond in the same language as the question. Be concise (3-4 key points max).
+Cover: civil vs criminal penalties, IRS/DOJ enforcement, statute of limitations, individual vs corporate liability.
+Educational purposes only."""
 
-When answering, be precise about:
-1. Civil vs. criminal penalties and their monetary ranges
-2. Statute of limitations for tax fraud (6 years for substantial omission,
-   unlimited for fraudulent returns)
-3. Which government agencies are involved (IRS, DOJ Tax Division, FinCEN)
-4. The distinction between the company's liability and individual liability
-   for executives who directed the evasion
 
-Always note that your response is for educational purposes and the user
-should consult a licensed attorney for specific legal advice.
-"""
+class TaxState(TypedDict):
+    messages: list
+
+
+async def tax_node(state: TaxState) -> dict:
+    llm = get_llm()
+    user_msgs = [m for m in state["messages"] if isinstance(m, HumanMessage)]
+    result = await llm.ainvoke([SystemMessage(content=TAX_SYSTEM_PROMPT)] + user_msgs)
+    return {"messages": state["messages"] + [AIMessage(content=content_to_str(result.content))]}
 
 
 def create_graph():
-    """Return a compiled LangGraph create_react_agent for tax questions."""
-    llm = get_llm()
-    graph = create_react_agent(
-        model=llm,
-        tools=[],
-        prompt=TAX_SYSTEM_PROMPT,
-    )
-    return graph
+    graph = StateGraph(TaxState)
+    graph.add_node("tax", tax_node)
+    graph.set_entry_point("tax")
+    graph.add_edge("tax", END)
+    return graph.compile()
