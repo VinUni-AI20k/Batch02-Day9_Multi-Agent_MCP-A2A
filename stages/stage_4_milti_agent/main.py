@@ -116,6 +116,7 @@ class LegalState(TypedDict):
     needs_compliance: bool
     tax_result: Annotated[str, _last_wins]
     compliance_result: Annotated[str, _last_wins]
+    privacy_analysis: Annotated[str, _last_wins]
     final_answer: str
 
 
@@ -185,6 +186,12 @@ def route_to_specialists(state: LegalState) -> list[Send]:
         sends.append(Send("call_tax_specialist", state))
     if state.get("needs_compliance"):
         sends.append(Send("call_compliance_specialist", state))
+    
+    # Check for privacy keywords (Exercise 4.2)
+    question_lower = state["question"].lower()
+    if any(kw in question_lower for kw in ["data", "privacy", "gdpr", "dữ liệu"]):
+        sends.append(Send("privacy_agent", state))
+        
     if not sends:
         sends.append(Send("aggregate", state))
     return sends
@@ -247,6 +254,8 @@ async def aggregate(state: LegalState) -> dict:
         sections.append(f"## Tax Analysis\n{state['tax_result']}")
     if state.get("compliance_result"):
         sections.append(f"## Regulatory Compliance Analysis\n{state['compliance_result']}")
+    if state.get("privacy_analysis"):
+        sections.append(f"## Privacy Analysis\n{state['privacy_analysis']}")
 
     combined = "\n\n---\n\n".join(sections)
 
@@ -265,6 +274,23 @@ async def aggregate(state: LegalState) -> dict:
     print(f"  [Node: aggregate] Done ({len(result.content)} chars)")
     return {"final_answer": result.content}
 
+async def privacy_agent(state: LegalState) -> dict:
+    """Agent chuyên về luật bảo vệ dữ liệu cá nhân."""
+    print("\n  [Node: privacy_agent] Privacy specialist agent starting...")
+    llm = get_llm()
+    
+    prompt = f"""Bạn là chuyên gia về GDPR và luật bảo vệ dữ liệu cá nhân.
+    
+Câu hỏi gốc: {state['question']}
+Phân tích pháp lý: {state.get('law_analysis', 'N/A')}
+
+Hãy phân tích các vấn đề về privacy và GDPR (nếu có).
+"""
+    
+    response = await llm.ainvoke([HumanMessage(content=prompt)])
+    print(f"  [Node: privacy_agent] Done ({len(response.content)} chars)")
+    return {"privacy_analysis": response.content}
+
 
 # ---------------------------------------------------------------------------
 # Graph construction (mirrors law_agent/graph.py topology)
@@ -278,6 +304,7 @@ def create_graph():
     graph.add_node("check_routing", check_routing)
     graph.add_node("call_tax_specialist", call_tax_specialist)
     graph.add_node("call_compliance_specialist", call_compliance_specialist)
+    graph.add_node("privacy_agent", privacy_agent)
     graph.add_node("aggregate", aggregate)
 
     graph.set_entry_point("analyze_law")
@@ -285,16 +312,17 @@ def create_graph():
     graph.add_conditional_edges(
         "check_routing",
         route_to_specialists,
-        ["call_tax_specialist", "call_compliance_specialist", "aggregate"],
+        ["call_tax_specialist", "call_compliance_specialist", "privacy_agent", "aggregate"],
     )
     graph.add_edge("call_tax_specialist", "aggregate")
     graph.add_edge("call_compliance_specialist", "aggregate")
+    graph.add_edge("privacy_agent", "aggregate")
     graph.add_edge("aggregate", END)
 
     return graph.compile()
 
 
-QUESTION = "If a company breaks a contract and avoids taxes, what are the legal and regulatory consequences?"
+QUESTION = "If a company breaks a contract, avoids taxes, and leaks user data to the public, what are the legal and regulatory consequences?"
 
 
 async def main():
@@ -356,6 +384,21 @@ async def main():
     print("and deploys each agent as an independent A2A service. Run it with:")
     print("  ./start_all.sh && python test_client.py")
     print("=" * 70)
+
+    # DRAW GRAPH (Codelab Part 4 Step 3)
+    try:
+        from IPython.display import Image, display
+        display(Image(graph.get_graph().draw_mermaid_png()))
+    except ImportError:
+        pass
+    
+    try:
+        png_data = graph.get_graph().draw_mermaid_png()
+        with open(os.path.join(os.path.dirname(__file__), "graph.png"), "wb") as f:
+            f.write(png_data)
+        print("\n>>> Saved graph visualization to stages/stage_4_milti_agent/graph.png")
+    except Exception as e:
+        print(f"\n>>> Could not save graph visualization: {e}")
 
 
 if __name__ == "__main__":
