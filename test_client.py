@@ -7,17 +7,21 @@ import asyncio
 import os
 import sys
 
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
 
 CUSTOMER_AGENT_URL = os.getenv("CUSTOMER_AGENT_URL", "http://localhost:10100")
-
 QUESTION = (
     "If a company breaks a contract and avoids taxes, "
     "what are the legal and regulatory consequences?"
 )
+
+
 
 
 async def main() -> None:

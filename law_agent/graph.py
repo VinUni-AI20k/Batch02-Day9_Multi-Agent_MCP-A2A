@@ -23,6 +23,25 @@ logger = logging.getLogger(__name__)
 
 MAX_DELEGATION_DEPTH = 3
 
+# ---------------------------------------------------------------------------
+# Robust Delegation (Challenge 3: Retry Logic)
+# ---------------------------------------------------------------------------
+
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from a2a.client.errors import A2AClientError
+
+@retry(
+    stop=stop_after_attempt(3), 
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(Exception),
+    reraise=True
+)
+async def _robust_delegate(*args, **kwargs):
+    """Delegate call with exponential backoff retry logic (Challenge 3)."""
+    from common.a2a_client import delegate
+    logger.info("Calling A2A delegate (will retry up to 3 times on failure)...")
+    return await delegate(*args, **kwargs)
+
 
 # ---------------------------------------------------------------------------
 # State definition
@@ -139,7 +158,7 @@ async def call_tax(state: LawState) -> dict:
 
     try:
         endpoint = await discover("tax_question")
-        result = await delegate(
+        result = await _robust_delegate(
             endpoint=endpoint,
             question=state["question"],
             context_id=state["context_id"],
@@ -160,7 +179,7 @@ async def call_compliance(state: LawState) -> dict:
 
     try:
         endpoint = await discover("compliance_question")
-        result = await delegate(
+        result = await _robust_delegate(
             endpoint=endpoint,
             question=state["question"],
             context_id=state["context_id"],

@@ -11,6 +11,9 @@ import asyncio
 import os
 import sys
 
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 # Allow running directly: python stages/stage_1_direct_llm/main.py
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -19,7 +22,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from common.llm import get_llm
 
-QUESTION = "What are the legal consequences if a company breaches a non-disclosure agreement?"
+QUESTION = "Theo pháp luật Việt Nam, độ tuổi nghỉ hưu của nam và nữ năm 2024 là bao nhiêu?"
 
 
 async def main():

@@ -38,6 +38,11 @@ Be professional, clear, and make the specialist response accessible to the user.
 """
 
 
+from langgraph.checkpoint.memory import MemorySaver
+
+# Khởi tạo MemorySaver ở mức global để bộ nhớ được lưu giữ giữa các lần gọi
+memory = MemorySaver()
+
 def build_graph(trace_id: str, context_id: str, depth: int) -> Any:
     """Build a create_react_agent graph with trace context bound into the tool closure.
 
@@ -92,5 +97,6 @@ def build_graph(trace_id: str, context_id: str, depth: int) -> Any:
         model=llm,
         tools=[delegate_to_legal_agent],
         prompt=CUSTOMER_SYSTEM_PROMPT,
+        checkpointer=memory,  # Tích hợp bộ nhớ vào đây
     )
     return graph
