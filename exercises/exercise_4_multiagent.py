@@ -8,6 +8,18 @@ import os
 import sys
 from typing import Annotated, TypedDict
 
+# Ensure UTF-8 output encoding for Vietnamese text under Windows console
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+if sys.stderr.encoding != 'utf-8':
+    try:
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from dotenv import load_dotenv
@@ -28,7 +40,7 @@ class State(TypedDict):
     law_analysis: Annotated[str, _last_wins]
     tax_analysis: Annotated[str, _last_wins]
     compliance_analysis: Annotated[str, _last_wins]
-    privacy_analysis: Annotated[str, _last_wins]  # TODO: Thêm field mới
+    privacy_analysis: Annotated[str, _last_wins]
     final_response: str
 
 
@@ -50,9 +62,6 @@ def check_routing(state: State) -> list[Send]:
     """Quyết định gọi agents nào dựa trên nội dung câu hỏi."""
     question_lower = state["question"].lower()
     tasks = []
-    
-    # TODO: Thêm logic routing cho privacy_agent
-    # Gợi ý: kiểm tra keywords như "data", "privacy", "gdpr", "dữ liệu"
     
     if any(kw in question_lower for kw in ["tax", "irs", "thuế"]):
         tasks.append(Send("tax_agent", state))
@@ -96,7 +105,6 @@ Tập trung: SEC, SOX, FCPA, AML, regulatory violations."""
     return {"compliance_analysis": response.content}
 
 
-# TODO: Implement privacy_agent
 def privacy_agent(state: State) -> dict:
     """Agent chuyên về bảo vệ dữ liệu cá nhân và GDPR."""
     print("  [Node: privacy_agent] Privacy and GDPR specialist analyzing...")
