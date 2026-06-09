@@ -88,7 +88,8 @@ async def check_routing(state: LawState) -> dict:
                 'Reply with ONLY valid JSON — no markdown, no extra text:\n'
                 '{"needs_tax": <true|false>, "needs_compliance": <true|false>}\n\n'
                 'needs_tax = true  → question involves tax law, IRS, tax evasion, penalties\n'
-                'needs_compliance = true → question involves regulatory compliance, SEC, SOX, AML, FCPA'
+                'needs_compliance = true → question involves regulatory compliance, SEC, SOX, AML, FCPA, '
+                'GDPR, CCPA, data privacy, or other regulator exposure'
             )
         ),
         HumanMessage(content=state["question"]),
@@ -109,8 +110,27 @@ async def check_routing(state: LawState) -> dict:
         logger.warning("Routing LLM returned non-JSON: %r — defaulting to both=True", raw)
         parsed = {"needs_tax": True, "needs_compliance": True}
 
-    needs_tax = bool(parsed.get("needs_tax", True))
-    needs_compliance = bool(parsed.get("needs_compliance", True))
+    question_lower = state["question"].lower()
+    tax_keywords = ["tax", "taxes", "irs", "thuế", "evasion", "avoid", "offshore", "fbar", "fatca"]
+    compliance_keywords = [
+        "compliance",
+        "regulatory",
+        "regulation",
+        "regulator",
+        "sec",
+        "sox",
+        "aml",
+        "fcpa",
+        "gdpr",
+        "ccpa",
+        "privacy",
+        "data",
+    ]
+
+    needs_tax = bool(parsed.get("needs_tax", False)) or any(kw in question_lower for kw in tax_keywords)
+    needs_compliance = bool(parsed.get("needs_compliance", False)) or any(
+        kw in question_lower for kw in compliance_keywords
+    )
     logger.info("Routing decision: needs_tax=%s needs_compliance=%s", needs_tax, needs_compliance)
     return {"needs_tax": needs_tax, "needs_compliance": needs_compliance}
 

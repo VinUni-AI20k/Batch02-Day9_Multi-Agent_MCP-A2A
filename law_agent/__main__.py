@@ -9,7 +9,7 @@ import os
 import uvicorn
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler

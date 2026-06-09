@@ -7,7 +7,6 @@ the results, and may call more tools before giving a final answer.
 Uses LangGraph's create_react_agent for the Think -> Act -> Observe loop.
 """
 
-import asyncio
 import os
 import sys
 
@@ -172,7 +171,26 @@ def check_compliance_requirements(industry: str, company_size: str) -> str:
     )
 
 
-TOOLS = [search_legal_database, calculate_penalty, check_compliance_requirements]
+@tool
+def search_case_law(keywords: str) -> str:
+    """Search case law by keyword.
+
+    Args:
+        keywords: Search keywords, such as breach, negligence, or contract.
+    """
+    cases = {
+        "breach": "Hadley v. Baxendale (1854) - Consequential damages",
+        "negligence": "Donoghue v. Stevenson (1932) - Duty of care",
+        "contract": "Carlill v. Carbolic Smoke Ball Co (1893) - Unilateral contract",
+    }
+    keywords_lower = keywords.lower()
+    for key, case in cases.items():
+        if key in keywords_lower:
+            return case
+    return "Không tìm thấy án lệ phù hợp"
+
+
+TOOLS = [search_legal_database, calculate_penalty, check_compliance_requirements, search_case_law]
 
 QUESTION = (
     "A tech startup with $5M revenue was caught sharing user data without consent "
@@ -181,13 +199,13 @@ QUESTION = (
 
 SYSTEM_PROMPT = (
     "You are a legal analyst agent. You have access to tools for searching legal databases, "
-    "calculating penalties, and checking compliance requirements. Use these tools to build "
-    "a comprehensive analysis. Search for each legal area separately — data privacy, tax, "
-    "and compliance. Keep your final answer under 500 words."
+    "calculating penalties, checking compliance requirements, and finding case law. Use these "
+    "tools to build a comprehensive analysis. Search for each legal area separately — data "
+    "privacy, tax, compliance, and relevant case law. Keep your final answer under 500 words."
 )
 
 
-async def main():
+def main():
     from langgraph.prebuilt import create_react_agent
 
     print("=" * 70)
@@ -205,12 +223,13 @@ async def main():
     print("-" * 70)
 
     llm = get_llm()
-    graph = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT)
+    debug = os.getenv("LANGGRAPH_DEBUG", "false").lower() in {"1", "true", "yes", "on"}
+    graph = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT, debug=debug)
 
     inputs = {"messages": [{"role": "user", "content": QUESTION}]}
 
     step = 0
-    async for chunk in graph.astream(inputs, stream_mode="updates"):
+    for chunk in graph.stream(inputs, stream_mode="updates"):
         for node_name, update in chunk.items():
             step += 1
             messages = update.get("messages", [])
@@ -246,5 +265,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    load_dotenv()
-    asyncio.run(main())
+    load_dotenv(override=True)
+    main()
