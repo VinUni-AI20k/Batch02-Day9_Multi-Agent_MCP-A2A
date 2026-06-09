@@ -3,3 +3,8 @@
 **cache**
 .claude
 **SOLUTION**
+# Ollama local data (model blobs can be GBs)
+.ollama/
+**/.ollama/
+# Temp test files
+test_ollama.py

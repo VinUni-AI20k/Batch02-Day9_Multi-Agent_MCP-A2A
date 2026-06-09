@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from langchain_core.messages import HumanMessage
 
+from common.llm import content_to_str
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
@@ -57,8 +58,10 @@ class ComplianceAgentExecutor(AgentExecutor):
             for msg in reversed(result.get("messages", [])):
                 if hasattr(msg, "content") and msg.content:
                     if not isinstance(msg, HumanMessage):
-                        answer = msg.content
-                        break
+                        text = content_to_str(msg.content)
+                        if text.strip():
+                            answer = text
+                            break
 
             if not answer:
                 answer = "I was unable to generate a compliance analysis at this time."

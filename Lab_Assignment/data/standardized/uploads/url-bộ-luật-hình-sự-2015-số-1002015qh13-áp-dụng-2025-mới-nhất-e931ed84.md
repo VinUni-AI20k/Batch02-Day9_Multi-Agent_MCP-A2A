@@ -1,0 +1,168 @@
+# Bộ luật hình sự 2015 số 100/2015/QH13 áp dụng 2025 mới nhất
+
+**Source:** Web upload
+**URL:** https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx#
+**Published:** 2026-02-23T08:55:00+07:00
+**Ingested:** 2026-06-08T16:22:51
+
+---
+
+Toàn văn Bộ luật hình sự 2015 số 100/2015/QH13 quy định về tội phạm và hình phạt; trường hợp loại trừ Trách nhiệm hình sự; thời hiệu truy cứu trách nhiệm hình sự; hình phạt; xóa án tích; pháp nhân thương mại phạm tội; người chưa thành niên phạm tội
+
+Bộ luật hình sự 2015 số 100/2015/QH13 áp dụng 2025 mới nhất THƯ VIỆN PHÁP LUẬT Trang Thông tin điện tử tổng hợp ...loại rủi ro pháp lý, nắm cơ hội làm giàu...
+
+6. ICS (Phân loại Quốc tế về Tiêu chuẩn)
+
+13. Tra cứu Xử phạt vi phạm hành chính
+
+18. Tra cứu diện tích tách thửa đất ở
+
+19. Tra cứu xử phạt giao thông đường bộ
+
+23. Tính thuế thu nhập cá nhân Online
+
+Điều 9 Luật Ban hành văn bản quy phạm pháp luật 2025
+
+" li += " " + json[i].Title + " "; li += "
+
+Từ khoá: Số Hiệu, Tiêu đề hoặc Nội dung ngắn gọn của Văn Bản...
+
+Khai thác hơn 540.000 văn bản Pháp Luật
+
+... và nhiều Tiện ích quan trọng khác
+
+Bộ luật hình sự 2015 số 100/2015/QH13 áp dụng 2025
+
+Bộ luật hình sự 2015 gồm 3 Phần, 26 Chương, 426 Điều (thay vì Bộ Luật Hình sự 1999 gồm 2 Phần, 24 Chương, 344 Điều). Cấu trúc Bộ luật hình sự năm 2015 có nhiều thay đổi so với BLHS cũ như sau:
+
+Phần thứ nhất: Những quy định chung
+
+Chương IV. Những trường hợp loại trừ trách nhiệm hình sự
+
+Chương V. Thời hiệu truy cứu trách nhiệm hình sự, miễn trách nhiệm hình sự
+
+Chương IX. Thời hiệu thi hành bản án, Miễn chấp hành hình phạt, Giảm thời hạn chấp hành hình phạt
+
+Chương XI. Những quy định đối với pháp nhân thương mại phạm tội
+
+Chương XII. Những quy định đối với người dưới 18 tuổi phạm tội
+
+Chương XIII. Các tội xâm phạm an ninh quốc gia
+
+Chương XIV. Các tội phạm xâm phạm tính mạng, sức khỏe, nhân phẩm, danh dự của con người
+
+Chương XV. Các tội xâm phạm quyền tự do của con người, quyền tự do, dân chủ của công dân
+
+Chương XVI. Các tội xâm phạm sở hữu
+
+Chương XVII. Các tội xâm phạm chế độ hôn nhân và gia đình
+
+Chương XVIII. Các tội xâm phạm trật tự quản lý kinh tế
+
+Chương XIX. Các tội phạm về môi trường
+
+Chương XXI. Các tội xâm phạm an toàn công cộng, trật tự công cộng
+
+Chương XXII. Các tội xâm phạm trật tự quản lý hành chính
+
+Chương XXIII. Các tội phạm về chức vụ
+
+Chương XXIV. Các tội xâm phạm hoạt động tư pháp
+
+Chương XXV. Các tội xâm phạm nghĩa vụ, trách nhiệm của quân nhân và trách nhiệm của người phối thuộc với quân đội trong chiến đấu, phục vụ chiến đấu
+
+Chương XXVI. Các Tội phá hoại hòa bình, chống loài người và Tội phạm chiến tranh
+
+Theo đó, Bộ luật hình sự 2015 có những điểm sau đáng chú ý:
+
++ Điều 12 Luật hình sự 2015 có quy định người từ đủ 16 tuổi trở lên phải chịu trách nhiệm hình sự về mọi tội phạm, trừ những tội phạm mà Bộ luật này có quy định khác.
+
++ Người từ đủ 14 tuổi trở lên, nhưng chưa đủ 16 tuổi chỉ phải chịu trách nhiệm hình sự về tội giết người, tội cố ý gây thương tích hoặc gây tổn hại cho sức khỏe của người khác, tội hiếp dâm, tội hiếp dâm người dưới 16 tuổi, tội cưỡng dâm người từ đủ 13 tuổi đến dưới 16 tuổi, tội cướp tài sản, tội bắt cóc nhằm chiếm đoạt tài sản; về tội phạm rất nghiêm trọng, tội phạm đặc biệt nghiêm trọng quy định tại một trong các Điều quy định cụ thể ở Điều 12 Bộ luật hình sự năm 2015.
+
+- Quyết định hình phạt dưới mức thấp nhất của khung hình phạt được áp dụng
+
++ Theo Điều 54 BLHS năm 2015, Tòa án có thể quyết định một hình phạt dưới mức thấp nhất của khung hình phạt được áp dụng nhưng phải trong khung hình phạt liền kề nhẹ hơn của điều luật khi người phạm tội có ít nhất hai tình tiết giảm nhẹ tại khoản 1 Điều 51 của Bộ luật HS 2015.
+
++ Tòa án có thể quyết định một hình phạt dưới mức thấp nhất của khung hình phạt được áp dụng nhưng không bắt buộc phải trong khung hình phạt liền kề nhẹ hơn của điều luật đối với người phạm tội lần đầu là người giúp sức trong vụ án đồng phạm nhưng có vai trò không đáng kể.
+
++ Nhưng nếu điều luật chỉ có một khung hình phạt hoặc khung hình phạt đó là khung hình phạt nhẹ nhất, thì Tòa án có thể quyết định chuyển sang một hình phạt khác thuộc loại nhẹ hơn.
+
+- Tha tù trước thời hạn có điều kiện
+
+Người đang chấp hành án phạt tù có thể được tha tù trước thời hạn khi có đủ các điều kiện sau đây:
+
++ Có nhiều tiến bộ, có ý thức cải tạo tốt;
+
++ Đã được giảm thời hạn chấp hành hình phạt tù đối với người bị kết án về tội phạm nghiêm trọng trở lên;
+
++ Đã chấp hành xong hình phạt bổ sung là hình phạt tiền, án phí và các nghĩa vụ bồi thường dân sự;
+
+Và một số điều kiện khác tại Điều 66 Luật hình sự 2015.
+
+- Điều kiện chịu trách nhiệm hình sự của pháp nhân thương mại
+
+Điều 75 Bộ luật hình sự 2015 quy định pháp nhân thương mại chỉ phải chịu trách nhiệm hình sự khi có đủ các điều kiện sau đây:
+
++ Hành vi phạm tội được thực hiện nhân danh pháp nhân thương mại;
+
++ Hành vi phạm tội được thực hiện vì lợi ích của pháp nhân thương mại;
+
++ Hành vi phạm tội được thực hiện có sự chỉ đạo, điều hành hoặc chấp thuận của pháp nhân thương mại;
+
++ Chưa hết thời hiệu truy cứu trách nhiệm hình sự tại khoản 2 và khoản 3 Điều 27 của BLHS 2015.
+
+- Tội tổ chức mang thai hộ vì mục đích thương mại
+
+Bộ luật HS năm 2015 quy định người nào tổ chức mang thai hộ vì mục đích thương mại, thì bị phạt tiền từ 50.000.000 đồng đến 200.000.000 đồng, phạt cải tạo không giam giữ đến 02 năm hoặc phạt tù từ 03 tháng đến 02 năm.
+
+Bộ luật hình sự 2015 có hiệu lực từ ngày 01/07/2016.
+
+CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM Độc lập - Tự do - Hạnh phúc ---------------
+
+Căn cứ Hiến pháp nước Cộng hòa xã hội chủ nghĩa Việt Nam ;
+
+Điều 1. Nhiệm vụ của Bộ luật hình sự
+
+Bộ luật hình sự có nhiệm vụ bảo vệ chủ quyền quốc gia, an ninh của đất nước, bảo vệ chế độ xã hội chủ nghĩa, quyền con người, quyền công dân, bảo vệ quyền bình đẳng giữa đồng bào các dân tộc, bảo vệ lợi ích của Nhà nước, tổ chức, bảo vệ trật tự pháp luật, chống mọi hành vi phạm tội; giáo dục mọi người ý thức tuân theo pháp luật, phòng ngừa và đấu tranh chống tội phạm.
+
+Bộ luật này quy định về tội phạm và hình phạt.
+
+Điều 2. Cơ sở của trách nhiệm hình sự
+
+1. Chỉ người nào phạm một tội đã được Bộ luật hình sự quy định mới phải chịu trách nhiệm hình sự.
+
+2. Chỉ pháp nhân thương mại nào phạm một tội đã được quy định tại Điều 76 của Bộ luật này mới phải chịu trách nhiệm hình sự.
+
+a) Mọi hành vi phạm tội do người thực hiện phải được phát hiện kịp thời, xử lý nhanh chóng, công minh theo đúng pháp luật;
+
+b) Mọi người phạm tội đều bình đẳng trước pháp luật, không phân biệt giới tính, dân tộc, tín ngưỡng, tôn giáo, thành phần, địa vị xã hội;
+
+c) Nghiêm trị người chủ mưu, cầm đầu, chỉ huy, ngoan cố chống đối, côn đồ, tái phạm nguy hiểm, lợi dụng chức vụ, quyền hạn để phạm tội;
+
+d) Nghiêm trị người phạm tội dùng thủ đoạn xảo quyệt, có tổ chức, có tính chất chuyên nghiệp, cố ý gây hậu quả đặc biệt nghiêm trọng .
+
+Khoan hồng đối với người tự thú, đầu thú, thành khẩn khai báo, tố giác đồng phạm, lập công chuộc tội, ăn năn, hối cải, tự nguyện sửa chữa hoặc bồi thường thiệt hại gây ra;
+
+đ) Đối với người lần đầu phạm tội ít nghiêm trọng, thì có thể áp dụng hình phạt nhẹ hơn hình phạt tù, giao họ cho cơ quan, tổ chức hoặc gia đình giám sát, giáo dục;
+
+e) Đối với người bị phạt tù thì buộc họ phải chấp hành hình phạt tại các cơ sở giam giữ, phải lao động, học tập để trở thành người có ích cho xã hội; nếu họ có đủ điều kiện do Bộ luật này quy định, thì có thể được xét giảm thời hạn chấp hành hình phạt, tha tù trước thời hạn có điều kiện;
+
+g) Người đã chấp hành xong hình phạt được tạo điều kiện làm ăn, sinh sống lương thiện, hòa nhập với cộng đồng, khi có đủ điều kiện do luật định thì được xóa án tích.
+
+2. Đối với pháp nhân thương mại phạm tội:
+
+a) Mọi hành vi phạm tội do pháp nhân thương mại thực hiện phải được phát hiện kịp thời, xử lý nhanh chóng, công minh theo đúng pháp luật;
+
+b) Mọi pháp nhân thương mại phạm tội đều bình đẳng trước pháp luật, không phân biệt hình thức sở hữu và thành phần kinh tế;
+
+c) Nghiêm trị pháp nhân thương mại phạm tội dùng thủ đoạn tinh vi, có tính chất chuyên nghiệp, cố ý gây hậu quả đặc biệt nghiêm trọng;
+
+d) Khoan hồng đối với pháp nhân thương mại tích cực hợp tác với cơ quan tiến hành tố tụng trong quá trình giải quyết vụ án, tự nguyện sửa chữa hoặc bồi thường thiệt hại gây ra, chủ động ngăn chặn hoặc khắc phục hậu quả xảy ra .
+
+Điều 4. Trách nhiệm phòng ngừa và đấu tranh chống tội phạm
+
+1. Cơ quan Công an, Viện kiểm sát nhân dân, Tòa án nhân dân và các cơ quan hữu quan khác có trách nhiệm thực hiện đầy đủ chức năng, nhiệm vụ, quyền hạn của mình, đồng thời hướng dẫn, giúp đỡ các cơ quan khác của Nhà nước, tổ chức, cá nhân phòng ngừa và đấu tranh chống tội phạm, giám sát và giáo dục người phạm tội tại cộng đồng.
+
+2. Cơ quan, tổ chức có nhiệm vụ giáo dục những người thuộc quyền quản lý của mình nâng cao cảnh giác, ý thức bảo vệ và tuân theo pháp luật, tôn trọng các quy tắc của cuộc sống xã hội chủ nghĩa; kịp thời có biện pháp loại trừ nguyên nhân và điều kiện gây ra tội phạm trong cơ quan, tổ chức của mình.
+
+3. Mọi công dân có nghĩa vụ tích cực tham gia phòng, chống tội phạm.

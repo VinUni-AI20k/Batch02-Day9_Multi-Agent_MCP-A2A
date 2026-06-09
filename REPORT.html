@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Report — Day 9: Legal Multi-Agent System</title>
+<style>
+:root{
+  --bg:#0d0f1a;--s1:#141828;--s2:#1c2038;--s3:#252a48;
+  --border:#2a3060;--accent:#7c6fff;--accent2:#00d4aa;
+  --warn:#ffd93d;--danger:#ef4444;--ok:#22c55e;
+  --text:#e8eaf6;--muted:#8892a8;--muted2:#5a6480;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.7}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── Layout ── */
+.wrapper{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+
+/* ── Cover ── */
+.cover{text-align:center;padding:60px 20px 48px;border-bottom:1px solid var(--border);margin-bottom:48px}
+.cover .tag-row{display:flex;justify-content:center;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+.tag{font-size:.7rem;padding:3px 12px;border-radius:99px;border:1px solid;font-weight:700}
+.tag.purple{background:rgba(124,111,255,.15);color:#a99cff;border-color:rgba(124,111,255,.4)}
+.tag.green{background:rgba(0,212,170,.12);color:var(--accent2);border-color:rgba(0,212,170,.35)}
+.tag.yellow{background:rgba(255,217,61,.12);color:var(--warn);border-color:rgba(255,217,61,.3)}
+.tag.red{background:rgba(239,68,68,.1);color:#ff8080;border-color:rgba(239,68,68,.3)}
+.cover h1{font-size:2.2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;background:linear-gradient(135deg,#a99cff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.cover .subtitle{font-size:1rem;color:var(--muted);margin-bottom:8px}
+.cover .meta{font-size:.82rem;color:var(--muted2);margin-top:16px}
+
+/* Screenshot */
+.screenshot-wrap{margin:32px auto;max-width:820px;border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.screenshot-wrap img{width:100%;display:block}
+.screenshot-caption{text-align:center;font-size:.78rem;color:var(--muted);margin-top:10px}
+
+/* ── TOC ── */
+.toc{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:48px}
+.toc h2{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.toc ol{padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.toc li{font-size:.88rem}
+.toc li a{color:var(--muted)}
+.toc li a:hover{color:var(--text)}
+.toc .sub{font-size:.8rem;color:var(--muted2);margin-top:3px;padding-left:16px;display:flex;flex-direction:column;gap:3px}
+
+/* ── Sections ── */
+section{margin-bottom:52px}
+h2.sec{font-size:1.35rem;font-weight:800;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+h2.sec .sec-num{font-size:.75rem;background:var(--accent);color:#fff;border-radius:5px;padding:2px 8px;font-weight:700;flex-shrink:0}
+h3{font-size:1rem;font-weight:700;color:#d4d8ff;margin:24px 0 10px}
+h4{font-size:.88rem;font-weight:700;color:var(--warn);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.06em}
+p{margin-bottom:12px;color:var(--text);font-size:.9rem}
+ul,ol{padding-left:22px;margin-bottom:14px;font-size:.9rem}
+li{margin-bottom:5px}
+strong{color:#d4d8ff}
+em{color:var(--muted)}
+
+/* ── Code ── */
+code{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.82rem;color:#a99cff}
+pre{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;overflow-x:auto;margin:14px 0 18px;position:relative}
+pre code{background:none;border:none;padding:0;color:var(--text);font-size:.82rem;line-height:1.7}
+.lang-badge{position:absolute;top:8px;right:12px;font-size:.63rem;color:var(--muted2);font-family:monospace}
+
+/* ── Tables ── */
+table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:.85rem}
+th{background:var(--s2);color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;padding:9px 14px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:9px 14px;border-bottom:1px solid rgba(42,48,96,.5);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(124,111,255,.04)}
+.ok-cell{color:var(--ok);font-weight:700}
+.warn-cell{color:var(--warn)}
+.err-cell{color:var(--danger)}
+
+/* ── Callouts ── */
+.callout{border-radius:10px;padding:14px 18px;margin:16px 0;border-left:4px solid;font-size:.87rem}
+.callout.info{background:rgba(124,111,255,.08);border-color:var(--accent)}
+.callout.warn{background:rgba(255,217,61,.07);border-color:var(--warn)}
+.callout.ok{background:rgba(34,197,94,.07);border-color:var(--ok)}
+.callout.err{background:rgba(239,68,68,.07);border-color:var(--danger)}
+.callout strong{display:block;margin-bottom:4px;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+.callout.info strong{color:var(--accent)}
+.callout.warn strong{color:var(--warn)}
+.callout.ok strong{color:var(--ok)}
+.callout.err strong{color:var(--danger)}
+
+/* ── Timeline ── */
+.timeline{display:flex;flex-direction:column;gap:0;margin:16px 0}
+.tl-item{display:flex;gap:16px;padding-bottom:20px;position:relative}
+.tl-item:last-child{padding-bottom:0}
+.tl-item:not(:last-child)::after{content:'';position:absolute;left:16px;top:34px;bottom:0;width:2px;background:var(--border)}
+.tl-dot{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.85rem;z-index:1;border:2px solid}
+.tl-dot.arch{background:rgba(124,111,255,.2);border-color:var(--accent)}
+.tl-dot.bug{background:rgba(239,68,68,.15);border-color:var(--danger)}
+.tl-dot.fix{background:rgba(34,197,94,.15);border-color:var(--ok)}
+.tl-dot.perf{background:rgba(255,217,61,.15);border-color:var(--warn)}
+.tl-dot.ui{background:rgba(0,212,170,.15);border-color:var(--accent2)}
+.tl-body{flex:1;padding-top:4px}
+.tl-title{font-weight:700;font-size:.9rem;margin-bottom:4px}
+.tl-desc{font-size:.83rem;color:var(--muted);line-height:1.6}
+
+/* ── Arch diagram (ASCII) ── */
+.arch-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:20px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.8rem;line-height:1.8;overflow-x:auto;color:var(--text)}
+.arch-box .c{color:var(--accent2)} .arch-box .l{color:var(--accent)} .arch-box .t{color:var(--warn)} .arch-box .r{color:#ff9f43} .arch-box .m{color:var(--muted)}
+
+/* ── Stats bar ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:20px 0}
+.stat-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+.stat-num{font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{font-size:.72rem;color:var(--muted);margin-top:3px}
+
+/* ── Footer ── */
+footer{text-align:center;padding:32px;font-size:.78rem;color:var(--muted2);border-top:1px solid var(--border);margin-top:60px}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- ═══════════════════════════════════════
+     COVER
+═══════════════════════════════════════ -->
+<div class="cover">
+  <div class="tag-row">
+    <span class="tag purple">LangGraph</span>
+    <span class="tag green">A2A Protocol</span>
+    <span class="tag yellow">Ollama · qwen2.5:3b</span>
+    <span class="tag purple">Day 9</span>
+    <span class="tag red">AI20K Batch 02</span>
+  </div>
+  <h1>Legal Multi-Agent System</h1>
+  <div class="subtitle">Báo cáo toàn diện: Thiết kế · Triển khai · Debug · Tối ưu</div>
+  <div class="meta">Ngày: 10/06/2026 &nbsp;·&nbsp; Stack: Python · FastAPI · LangGraph · A2A SDK · Ollama · Streamlit</div>
+</div>
+
+<!-- Screenshot -->
+<div class="screenshot-wrap">
+  <img src="screenshot.png" alt="Legal Multi-Agent Dashboard" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+  <div style="display:none;background:var(--s2);padding:80px 20px;text-align:center;color:var(--muted)">
+    [Đặt file ảnh vào cùng thư mục với tên <code>screenshot.png</code>]
+  </div>
+</div>
+<p class="screenshot-caption">Hình 1 — Dashboard thực thi: Pipeline SVG live + Chat interface · 81s end-to-end · 5/5 agents online</p>
+
+<!-- ═══════════════════════════════════════
+     TABLE OF CONTENTS
+═══════════════════════════════════════ -->
+<div class="toc">
+  <h2>Mục lục</h2>
+  <ol>
+    <li><a href="#s1">Tổng quan dự án</a></li>
+    <li><a href="#s2">Kiến trúc hệ thống</a>
+      <div class="sub">
+        <a href="#s2">2.1 Stage 4 — In-process Multi-Agent</a>
+        <a href="#s2">2.2 Stage 5 — Distributed A2A (5 services)</a>
+        <a href="#s2">2.3 Lab Assignment — Supervisor-Workers</a>
+      </div>
+    </li>
+    <li><a href="#s3">Lịch sử triển khai</a></li>
+    <li><a href="#s4">Bugs đã gặp và cách giải quyết</a></li>
+    <li><a href="#s5">Tối ưu hiệu năng (114s → 30–40s)</a></li>
+    <li><a href="#s6">Dashboard UI — agent_flow.html</a></li>
+    <li><a href="#s7">Bài học rút ra</a></li>
+    <li><a href="#s8">Kết quả đạt được</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════
+     1. OVERVIEW
+═══════════════════════════════════════ -->
+<section id="s1">
+  <h2 class="sec"><span class="sec-num">01</span>Tổng quan dự án</h2>
+
+  <p>Dự án <strong>Legal Multi-Agent System</strong> là một hệ thống đa tác nhân phân tán, được xây dựng trong khuôn khổ buổi học Day 9 của chương trình AI20K Batch 02. Mục tiêu là xây dựng một pipeline phân tích pháp lý tự động bằng cách kết hợp nhiều agent chuyên biệt hoạt động song song qua giao thức <strong>A2A (Agent-to-Agent)</strong>.</p>
+
+  <p>Người dùng đặt một câu hỏi pháp lý (tiếng Việt hoặc tiếng Anh), hệ thống tự động phân tích từ 3 góc độ: <strong>luật hợp đồng</strong>, <strong>luật thuế</strong>, và <strong>tuân thủ quy định</strong> — hoàn toàn tự động, không cần can thiệp thủ công.</p>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">Services độc lập</div></div>
+    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">AI Agents</div></div>
+    <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">LLM calls / query</div></div>
+    <div class="stat-card"><div class="stat-num">~35s</div><div class="stat-label">Latency (sau tối ưu)</div></div>
+    <div class="stat-card"><div class="stat-num">2</div><div class="stat-label">Parallel workers</div></div>
+    <div class="stat-card"><div class="stat-num">0đ</div><div class="stat-label">Chi phí API (Ollama)</div></div>
+  </div>
+
+  <h3>Stack công nghệ</h3>
+  <table>
+    <tr><th>Layer</th><th>Công nghệ</th><th>Mục đích</th></tr>
+    <tr><td>LLM Runtime</td><td><strong>Ollama · qwen2.5:3b</strong></td><td>Local inference, miễn phí, không phụ thuộc API key</td></tr>
+    <tr><td>Agent Framework</td><td><strong>LangGraph 0.2</strong></td><td>StateGraph, Send API, conditional edges</td></tr>
+    <tr><td>Agent Protocol</td><td><strong>A2A SDK (Google)</strong></td><td>HTTP JSON-RPC giữa các agent độc lập</td></tr>
+    <tr><td>Web Framework</td><td><strong>FastAPI + uvicorn</strong></td><td>Serve mỗi agent như một HTTP service</td></tr>
+    <tr><td>Package Manager</td><td><strong>uv</strong></td><td>Quản lý .venv, cài package nhanh</td></tr>
+    <tr><td>Lab UI</td><td><strong>Streamlit</strong></td><td>Supervisor-Workers demo interface</td></tr>
+    <tr><td>Dashboard</td><td><strong>Vanilla HTML/JS/SVG</strong></td><td>Live execution visualizer + chatbot</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════
+     2. ARCHITECTURE
+═══════════════════════════════════════ -->
+<section id="s2">
+  <h2 class="sec"><span class="sec-num">02</span>Kiến trúc hệ thống</h2>
+
+  <h3>2.1 Stage 4 — In-process Multi-Agent</h3>
+  <p>Giai đoạn đầu là bước học: tất cả các agent chạy <strong>trong cùng một process Python</strong>. Law Agent gọi Tax và Compliance qua hàm Python trực tiếp. Không có network call, không có service discovery.</p>
+  <p>File: <code>stages/stage_4_milti_agent/main.py</code></p>
+
+  <h3>2.2 Stage 5 — Distributed A2A (kiến trúc chính)</h3>
+  <p>Mỗi agent được tách thành một <strong>FastAPI service riêng biệt</strong>, giao tiếp qua giao thức A2A (JSON-RPC over HTTP). Registry đóng vai trò service discovery.</p>
+
+  <div class="arch-box">
+<span class="m">              ┌─────────────────────────────────┐</span>
+<span class="m">              │         Registry :10000          │</span>
+<span class="m">              │   POST /register · GET /agents  │</span>
+<span class="m">              └────────────┬────────────────────┘</span>
+<span class="m">                           │ register on startup</span>
+<span class="m">              ┌────────────▼────────────────────┐</span>
+<span class="c">              │      Customer Agent :10100      │  ← entry point</span>
+<span class="c">              │     message/send (JSON-RPC)     │</span>
+<span class="m">              └────────────┬────────────────────┘</span>
+<span class="m">                           │ A2A delegate</span>
+<span class="m">              ┌────────────▼────────────────────┐</span>
+<span class="l">              │       Law Agent :10101          │  ← orchestrator</span>
+<span class="l">              │  analyze_and_route → dispatch  │</span>
+<span class="m">              └──────────┬──────────┬──────────┘</span>
+<span class="m">                         │ parallel │</span>
+<span class="m">               ┌─────────▼──┐   ┌───▼──────────┐</span>
+<span class="t">               │ Tax :10102 │   │ Comp :10103  │</span>
+<span class="t">               │ tax_node   │   │ comp_node    │</span>
+<span class="m">               └─────────┬──┘   └───┬──────────┘</span>
+<span class="m">                         └────┬─────┘</span>
+<span class="l">                         aggregate()</span>
+<span class="l">                       (template, no LLM)</span>
+  </div>
+
+  <h4>LLM call flow (sau tối ưu)</h4>
+  <table>
+    <tr><th>Bước</th><th>Node</th><th>LLM?</th><th>Thời gian ~</th></tr>
+    <tr><td>1</td><td><code>analyze_and_route</code> (Law)</td><td class="ok-cell">1 call</td><td>~20s</td></tr>
+    <tr><td>2a</td><td><code>tax_node</code> (Tax)</td><td class="ok-cell">1 call (parallel)</td><td>~15s</td></tr>
+    <tr><td>2b</td><td><code>compliance_node</code> (Compliance)</td><td class="ok-cell">1 call (parallel)</td><td>~15s</td></tr>
+    <tr><td>3</td><td><code>aggregate</code> (Law)</td><td class="ok-cell">0 — template</td><td>~0s</td></tr>
+    <tr><td colspan="3"><strong>Tổng critical path</strong></td><td class="ok-cell"><strong>~35s</strong></td></tr>
+  </table>
+
+  <h3>2.3 Lab Assignment — Supervisor-Workers (LangGraph)</h3>
+  <p>Song song với Stage 5, dự án còn triển khai bài tập Lab: <strong>Supervisor-Workers pattern</strong> với LangGraph <code>Send API</code> cho hệ thống tìm kiếm tài liệu pháp lý.</p>
+
+  <div class="arch-box">
+<span class="m">User Question</span>
+<span class="m">      │</span>
+<span class="l">┌─────▼──────────────────┐</span>
+<span class="l">│     Supervisor Node    │  routing: ["legal"] | ["news"] | ["legal","news"]</span>
+<span class="l">└──────┬──────────┬──────┘</span>
+<span class="m">       │ Send     │ Send   ← LangGraph parallel dispatch</span>
+<span class="t">┌──────▼───┐  ┌────▼────────┐</span>
+<span class="t">│  Legal   │  │    News     │  BM25 + semantic hybrid search</span>
+<span class="t">│  Worker  │  │   Worker    │  filter type=legal / type=news</span>
+<span class="m">└──────┬───┘  └────┬────────┘</span>
+<span class="m">       └─────┬─────┘</span>
+<span class="r">       ┌─────▼──────────────┐</span>
+<span class="r">       │  Synthesis Worker  │  dedup → Ollama → answer</span>
+<span class="m">       └────────────────────┘</span>
+  </div>
+
+  <p>UI Streamlit: <code>Lab_Assignment/supervisor_app.py</code> — hiển thị route badges, số chunks từ mỗi worker, và Architecture tab giải thích graph.</p>
+</section>
+
+<!-- ═══════════════════════════════════════
+     3. TIMELINE
+═══════════════════════════════════════ -->
+<section id="s3">
+  <h2 class="sec"><span class="sec-num">03</span>Lịch sử triển khai</h2>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-dot arch">🏗</div>
+      <div class="tl-body">
+        <div class="tl-title">Stage 4 — In-process multi-agent</div>
+        <div class="tl-desc">Xây dựng baseline: Law, Tax, Compliance agent trong cùng process. Dùng <code>ainvoke</code> trực tiếp, không có service discovery. Xác nhận pipeline hoạt động cơ bản.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot arch">🔗</div>
+      <div class="tl-body">
+        <div class="tl-title">Stage 5 — Tách thành 5 services độc lập</div>
+        <div class="tl-desc">Registry (:10000), Customer (:10100), Law (:10101), Tax (:10102), Compliance (:10103). Mỗi service dùng <code>A2AFastAPIApplication</code>, tự đăng ký với Registry khi khởi động. Law Agent dùng LangGraph <code>Send API</code> để dispatch Tax + Compliance song song.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot bug">🐛</div>
+      <div class="tl-body">
+        <div class="tl-title">Phát hiện "No response text received" — Gemma list-content bug</div>
+        <div class="tl-desc">Model <code>google/gemma-4-31b-it:free</code> qua OpenRouter trả về <code>AIMessage.content</code> là <code>list[dict]</code> thay vì <code>str</code>. Gọi <code>.strip()</code> hoặc truyền vào <code>TextPart(text=list)</code> crash toàn bộ pipeline.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot fix">✅</div>
+      <div class="tl-body">
+        <div class="tl-title">Fix content_to_str() helper trong common/llm.py</div>
+        <div class="tl-desc">Thêm hàm normalize content, áp dụng tại 5 file: <code>law_agent/graph.py</code>, <code>tax_agent/agent_executor.py</code>, <code>compliance_agent/agent_executor.py</code>, <code>stages/stage_4</code>. Từ đây toàn bộ pipeline handle được cả <code>str</code> lẫn <code>list[dict]</code>.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot bug">🐛</div>
+      <div class="tl-body">
+        <div class="tl-title">OpenRouter quota cạn — tất cả free model bị rate limit</div>
+        <div class="tl-desc">Không thể dùng cloud LLM. Cần giải pháp offline không tốn tiền.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot fix">✅</div>
+      <div class="tl-body">
+        <div class="tl-title">Thêm Ollama fallback vào get_llm()</div>
+        <div class="tl-desc">Sửa <code>common/llm.py</code>: nếu <code>USE_OLLAMA=1</code> trong <code>.env</code> thì dùng <code>ChatOpenAI</code> trỏ về <code>http://localhost:11434/v1</code>. Pull model <code>qwen2.5:3b</code> (~2GB). Xác nhận hoạt động bằng <code>test_ollama.py</code>.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot arch">🏗</div>
+      <div class="tl-body">
+        <div class="tl-title">Lab Assignment — Supervisor-Workers LangGraph</div>
+        <div class="tl-desc">Xây dựng <code>Lab_Assignment/src/supervisor_agent.py</code>: <code>StateGraph</code> với 4 nodes, routing qua <code>Send API</code>, hybrid BM25 + semantic search. UI Streamlit tại <code>supervisor_app.py</code>.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot bug">🐛</div>
+      <div class="tl-body">
+        <div class="tl-title">.ollama/ (2.7GB model blobs) bị commit vào git</div>
+        <div class="tl-desc">Git track cả folder <code>Lab_Assignment/.ollama/</code> chứa binary model weights. Push sẽ fail và repo phình to vô ích.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot fix">✅</div>
+      <div class="tl-body">
+        <div class="tl-title">git reset --soft + git rm --cached + .gitignore</div>
+        <div class="tl-desc">Undo 2 commits gần nhất (<code>git reset --soft HEAD~2</code>), unstage binary files, thêm <code>.ollama/</code> và <code>**/.ollama/</code> vào <code>.gitignore</code>, recommit sạch. Push thành công lên branch <code>vhd_04</code>.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot bug">🐛</div>
+      <div class="tl-body">
+        <div class="tl-title">start_all.sh không chạy trên Windows</div>
+        <div class="tl-desc">Bash script không có sẵn trong PowerShell environment.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot fix">✅</div>
+      <div class="tl-body">
+        <div class="tl-title">Viết start_all.ps1 cho Windows PowerShell</div>
+        <div class="tl-desc">Script dùng <code>uv run python -m &lt;module&gt;</code>, auto-detect uv vs venv, khởi động đúng thứ tự (Registry → Tax/Comp → Law → Customer), health check cuối cùng.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot bug">🐛</div>
+      <div class="tl-body">
+        <div class="tl-title">start_all.ps1 crash: "Unexpected token '?.Source'"</div>
+        <div class="tl-desc">PowerShell 5.1 (Windows 11 mặc định) không hỗ trợ null-conditional operator <code>?.</code> — đây là feature của PowerShell 7+.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot fix">✅</div>
+      <div class="tl-body">
+        <div class="tl-title">Sửa PS5.1 compatibility</div>
+        <div class="tl-desc">Thay <code>$(Get-Command uv)?.Source</code> bằng <code>Get-Command uv -ErrorAction SilentlyContinue</code> rồi kiểm tra <code>if ($uvCmd)</code>.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot bug">🐛</div>
+      <div class="tl-body">
+        <div class="tl-title">HTML dashboard: "Method not found" (-32601)</div>
+        <div class="tl-desc">Gọi <code>method: "tasks/send"</code> trong JSON-RPC payload — sai. A2A SDK dùng <code>"message/send"</code>. Ngoài ra còn sai format: <code>parts[].type</code> thay vì <code>parts[].kind</code>.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot fix">✅</div>
+      <div class="tl-body">
+        <div class="tl-title">Fix A2A JSON-RPC payload format</div>
+        <div class="tl-desc">Đổi method → <code>"message/send"</code>, field → <code>kind: "text"</code>, thêm <code>messageId</code>, fix response parser (artifacts → status.message fallback).</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot bug">🐛</div>
+      <div class="tl-body">
+        <div class="tl-title">Browser block request: CORS policy</div>
+        <div class="tl-desc">Mở <code>agent_flow.html</code> từ <code>file://</code>, browser chặn toàn bộ fetch đến <code>localhost:10100</code> vì thiếu CORS headers trong FastAPI.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot fix">✅</div>
+      <div class="tl-body">
+        <div class="tl-title">Thêm CORSMiddleware vào 5 services</div>
+        <div class="tl-desc">Thêm <code>from fastapi.middleware.cors import CORSMiddleware</code> và <code>app.add_middleware(CORSMiddleware, allow_origins=["*"], ...)</code> vào tất cả <code>__main__.py</code>. Registry dùng trực tiếp trên <code>app</code>, 4 agent còn lại thêm sau <code>app_builder.build()</code>.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot perf">⚡</div>
+      <div class="tl-body">
+        <div class="tl-title">Tối ưu latency: 114s → ~35s</div>
+        <div class="tl-desc">Ba thay đổi lớn: merge 2 LLM calls thành 1, bỏ LLM synthesis trong aggregate, thay create_react_agent (vòng lặp tool) bằng single ainvoke. Thêm max_tokens=600 và rút ngắn system prompts.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot ui">🎨</div>
+      <div class="tl-body">
+        <div class="tl-title">Dashboard agent_flow.html — Live execution visualizer + Chatbot</div>
+        <div class="tl-desc">Thiết kế lại hoàn toàn: SVG pipeline diagram với data packet animation, chat bubbles, execution log realtime, timing display, agent health check tự động.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     4. BUGS
+═══════════════════════════════════════ -->
+<section id="s4">
+  <h2 class="sec"><span class="sec-num">04</span>Bugs đã gặp và cách giải quyết</h2>
+
+  <h3>Bug 1 — Gemma list-content crash</h3>
+  <div class="callout err"><strong>Root cause</strong>Model Gemma trả về <code>AIMessage.content</code> dạng <code>list[dict]</code> thay vì <code>str</code>. Code gốc gọi <code>result.content.strip()</code> → <code>AttributeError: 'list' object has no attribute 'strip'</code>.</div>
+  <pre><code><span class="lang-badge">python — common/llm.py</span>def content_to_str(raw) -> str:
+    if isinstance(raw, str):
+        return raw
+    if isinstance(raw, list):
+        return "".join(
+            block.get("text", "") if isinstance(block, dict) else str(block)
+            for block in raw
+        )
+    return str(raw) if raw is not None else ""</code></pre>
+  <p>Áp dụng tại <strong>5 file</strong>: law_agent, tax_agent, compliance_agent, customer_agent, stage_4. Đây là fix quan trọng nhất của dự án vì nó ảnh hưởng toàn bộ output pipeline.</p>
+
+  <h3>Bug 2 — OpenRouter quota cạn</h3>
+  <div class="callout warn"><strong>Vấn đề</strong>Tất cả free-tier model trên OpenRouter bị rate limit. Pipeline không thể dùng cloud LLM.</div>
+  <pre><code><span class="lang-badge">python — common/llm.py</span>def get_llm() -> ChatOpenAI:
+    use_ollama = os.getenv("USE_OLLAMA", "0") == "1"
+    if use_ollama or not api_key:
+        return ChatOpenAI(
+            model=os.getenv("OLLAMA_MODEL", "qwen2.5:3b"),
+            openai_api_key="ollama",
+            openai_api_base=f"{ollama_url}/v1",
+            max_tokens=int(os.getenv("LLM_MAX_TOKENS", "600")),
+        )</code></pre>
+  <p>Ollama expose endpoint OpenAI-compatible tại <code>:11434/v1</code> — <code>ChatOpenAI</code> của LangChain kết nối trực tiếp không cần thay đổi gì thêm.</p>
+
+  <h3>Bug 3 — .ollama/ 2.7GB trong git</h3>
+  <div class="callout err"><strong>Nguyên nhân</strong>Khi cài Ollama vào <code>Lab_Assignment/</code>, model binary (~2.7GB) bị git track trước khi thêm vào <code>.gitignore</code>.</div>
+  <pre><code><span class="lang-badge">bash</span>git reset --soft HEAD~2          # undo 2 commits, giữ nguyên files
+git rm -r --cached Lab_Assignment/.ollama/   # unstage blobs
+# Thêm vào .gitignore:
+.ollama/
+**/.ollama/
+git add . && git commit -m "chore: remove ollama blobs from tracking"</code></pre>
+
+  <h3>Bug 4 — PowerShell 5.1 null-conditional</h3>
+  <div class="callout warn"><strong>Vấn đề</strong><code>$var?.Property</code> là syntax của PowerShell 7+. Windows 11 mặc định dùng PS 5.1.</div>
+  <table>
+    <tr><th>❌ PS 7+ only</th><th>✅ PS 5.1 compatible</th></tr>
+    <tr><td><code>$(Get-Command uv)?.Source</code></td><td><code>$uvCmd = Get-Command uv -ErrorAction SilentlyContinue</code></td></tr>
+    <tr><td><code>if ($uvCmd?.Source)</code></td><td><code>if ($uvCmd) { ... }</code></td></tr>
+  </table>
+
+  <h3>Bug 5 — A2A method name sai</h3>
+  <div class="callout err"><strong>Lỗi</strong><code>{"error": {"code": -32601, "message": "Method not found"}}</code> — gọi sai tên method trong JSON-RPC.</div>
+  <table>
+    <tr><th>Field</th><th>❌ Sai</th><th>✅ Đúng (A2A SDK)</th></tr>
+    <tr><td>method</td><td><code>"tasks/send"</code></td><td><code>"message/send"</code></td></tr>
+    <tr><td>part type</td><td><code>{type: "text"}</code></td><td><code>{kind: "text"}</code></td></tr>
+    <tr><td>message ID</td><td>trong <code>params.id</code></td><td><code>params.message.messageId</code></td></tr>
+  </table>
+
+  <h3>Bug 6 — CORS block từ file://</h3>
+  <div class="callout err"><strong>Nguyên nhân</strong>Khi mở HTML từ <code>file://</code>, browser áp dụng same-origin policy nghiêm ngặt. Request đến <code>http://localhost:10100</code> bị block nếu response không có <code>Access-Control-Allow-Origin: *</code>.</div>
+  <pre><code><span class="lang-badge">python — tất cả __main__.py</span>from fastapi.middleware.cors import CORSMiddleware
+
+# Với A2AFastAPIApplication:
+app = app_builder.build()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Với Registry (FastAPI trực tiếp):
+app = FastAPI(...)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], ...)</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════
+     5. PERFORMANCE
+═══════════════════════════════════════ -->
+<section id="s5">
+  <h2 class="sec"><span class="sec-num">05</span>Tối ưu hiệu năng — 114s → 30–40s</h2>
+
+  <div class="callout info"><strong>Bối cảnh</strong>Chạy <code>qwen2.5:3b</code> local qua Ollama. Bottleneck chính là số lượng LLM calls và độ dài token được sinh ra — không phải network latency.</div>
+
+  <h3>Phân tích trước khi tối ưu</h3>
+  <table>
+    <tr><th>LLM Call</th><th>Node</th><th>Thời gian ~</th><th>Critical path?</th></tr>
+    <tr><td>1</td><td><code>analyze_law</code></td><td class="err-cell">~20s</td><td class="err-cell">Có</td></tr>
+    <tr><td>2</td><td><code>check_routing</code></td><td class="err-cell">~15s</td><td class="err-cell">Có (tuần tự sau 1)</td></tr>
+    <tr><td>3</td><td><code>call_tax</code> (react_agent, 2 turns)</td><td class="err-cell">~25s</td><td class="warn-cell">Parallel</td></tr>
+    <tr><td>4</td><td><code>call_compliance</code> (react_agent, 2 turns)</td><td class="err-cell">~25s</td><td class="warn-cell">Parallel</td></tr>
+    <tr><td>5</td><td><code>aggregate</code></td><td class="err-cell">~20s</td><td class="err-cell">Có</td></tr>
+    <tr><td colspan="2"><strong>Tổng wall-clock</strong></td><td class="err-cell"><strong>~105–120s</strong></td><td></td></tr>
+  </table>
+
+  <h3>Tối ưu 1 — Merge analyze_law + check_routing</h3>
+  <p>Thay vì 2 LLM calls tuần tự, dùng 1 call trả về JSON có cả law_analysis và routing decision:</p>
+  <pre><code><span class="lang-badge">python — law_agent/graph.py</span>async def analyze_and_route(state: LawState) -> dict:
+    # 1 LLM call thay vì 2, tiết kiệm ~15s
+    messages = [
+        SystemMessage(content=(
+            "You are a corporate litigation attorney. Respond in the same language as the question.\n"
+            'Reply ONLY with valid JSON: {"law_analysis":"...","needs_tax":bool,"needs_compliance":bool}'
+        )),
+        HumanMessage(content=state["question"]),
+    ]
+    result = await llm.ainvoke(messages)
+    parsed = json.loads(content_to_str(result.content))
+    return {"law_analysis": parsed["law_analysis"],
+            "needs_tax": parsed["needs_tax"],
+            "needs_compliance": parsed["needs_compliance"]}</code></pre>
+
+  <h3>Tối ưu 2 — Bỏ LLM trong aggregate()</h3>
+  <p>Thay vì dùng LLM synthesis (~20s), ghép các section bằng template Markdown:</p>
+  <pre><code><span class="lang-badge">python — law_agent/graph.py</span>async def aggregate(state: LawState) -> dict:
+    # Không LLM — tiết kiệm ~20s
+    sections = []
+    if state.get("law_analysis"):
+        sections.append(f"## Legal Analysis\n\n{state['law_analysis']}")
+    if state.get("tax_result"):
+        sections.append(f"## Tax Analysis\n\n{state['tax_result']}")
+    if state.get("compliance_result"):
+        sections.append(f"## Regulatory Compliance\n\n{state['compliance_result']}")
+    return {"final_answer": "\n\n---\n\n".join(sections)}</code></pre>
+
+  <h3>Tối ưu 3 — Thay create_react_agent bằng single ainvoke</h3>
+  <p><code>create_react_agent</code> chạy vòng lặp tool-calling: LLM gọi → check tool → LLM confirm. Với <strong>0 tools</strong>, nó vẫn chạy 2 LLM turns thay vì 1.</p>
+  <pre><code><span class="lang-badge">python — tax_agent/graph.py (trước → sau)</span># ❌ Trước: react_agent loop (2 LLM turns dù không có tools)
+graph = create_react_agent(model=llm, tools=[], prompt=SYSTEM_PROMPT)
+
+# ✅ Sau: 1 ainvoke trực tiếp
+async def tax_node(state: TaxState) -> dict:
+    result = await llm.ainvoke(
+        [SystemMessage(content=TAX_SYSTEM_PROMPT)] + state["messages"]
+    )
+    return {"messages": state["messages"] + [AIMessage(content=content_to_str(result.content))]}</code></pre>
+
+  <h3>Tối ưu 4 — max_tokens + prompt ngắn hơn</h3>
+  <pre><code><span class="lang-badge">python — common/llm.py + .env</span># max_tokens giới hạn độ dài output
+max_tokens = int(os.getenv("LLM_MAX_TOKENS", "600"))
+ChatOpenAI(..., max_tokens=max_tokens)
+
+# System prompt từ 15 dòng → 3 dòng
+# + "Respond in the same language as the question" → hỗ trợ tiếng Việt</code></pre>
+
+  <h3>Kết quả</h3>
+  <table>
+    <tr><th>LLM Call</th><th>Trước</th><th>Sau</th><th>Tiết kiệm</th></tr>
+    <tr><td>analyze + routing</td><td class="err-cell">2 calls (~35s)</td><td class="ok-cell">1 call (~20s)</td><td class="ok-cell">~15s</td></tr>
+    <tr><td>aggregate synthesis</td><td class="err-cell">1 call (~20s)</td><td class="ok-cell">0 (template)</td><td class="ok-cell">~20s</td></tr>
+    <tr><td>tax + compliance (each)</td><td class="err-cell">react 2 turns (~25s)</td><td class="ok-cell">1 ainvoke (~15s)</td><td class="ok-cell">~10s</td></tr>
+    <tr><td>max_tokens + prompt</td><td class="err-cell">unlimited</td><td class="ok-cell">600 tokens</td><td class="ok-cell">~15s</td></tr>
+    <tr><td colspan="2"><strong>Tổng</strong></td><td class="ok-cell"><strong>~35s</strong></td><td class="ok-cell"><strong>−79s</strong></td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════
+     6. DASHBOARD
+═══════════════════════════════════════ -->
+<section id="s6">
+  <h2 class="sec"><span class="sec-num">06</span>Dashboard UI — agent_flow.html</h2>
+
+  <p>File <code>agent_flow.html</code> là single-page app không cần build step, mở trực tiếp bằng trình duyệt. Kết nối thật đến các agents qua fetch API.</p>
+
+  <h3>Thành phần</h3>
+  <table>
+    <tr><th>Component</th><th>Mô tả</th><th>Tech</th></tr>
+    <tr><td>SVG Pipeline Diagram</td><td>Agent nodes sáng lên theo thứ tự thực thi, edges chuyển màu + dash animation</td><td>SVG + CSS animation</td></tr>
+    <tr><td>Data Packets</td><td>Chấm tròn màu chạy dọc đường nối giữa agents (<code>getPointAtLength</code>)</td><td>SVG + requestAnimationFrame</td></tr>
+    <tr><td>Step Pips</td><td>6 chấm tròn bên dưới diagram, active → done theo từng bước</td><td>CSS transition</td></tr>
+    <tr><td>Execution Log</td><td>Sidebar log từng bước với timestamp, tên agent màu sắc riêng</td><td>DOM append</td></tr>
+    <tr><td>Timing Box</td><td>analyze+route / tax‖compliance / total (ms → s)</td><td>Date.now()</td></tr>
+    <tr><td>Chat Bubbles</td><td>User phải (tím), Assistant trái (dark), markdown render</td><td>innerHTML + regex</td></tr>
+    <tr><td>Agent Tags</td><td>⚖️ Law · 💰 Tax · 📋 Compliance trên mỗi response</td><td>DOM</td></tr>
+    <tr><td>Health Check</td><td>Fetch từng agent mỗi 25s, sys-dot đổi màu</td><td>fetch + AbortSignal.timeout</td></tr>
+    <tr><td>Welcome Chips</td><td>4 câu hỏi mẫu tiếng Việt/Anh</td><td>onclick fill textarea</td></tr>
+  </table>
+
+  <h3>A2A Request format (đúng)</h3>
+  <pre><code><span class="lang-badge">javascript</span>const payload = {
+  id: traceId,
+  jsonrpc: "2.0",
+  method: "message/send",        // ← không phải "tasks/send"
+  params: {
+    message: {
+      role: "user",
+      parts: [{ kind: "text", text: question }],   // ← "kind" không phải "type"
+      messageId: traceId
+    }
+  }
+}
+
+// Parse response
+const arts = data?.result?.artifacts || []
+answer = arts.flatMap(a => a.parts.map(p => p.text || p.root?.text || '')).join('\n')
+// Fallback: data?.result?.status?.message?.parts</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════
+     7. LESSONS
+═══════════════════════════════════════ -->
+<section id="s7">
+  <h2 class="sec"><span class="sec-num">07</span>Bài học rút ra</h2>
+
+  <h3>🔬 Kỹ thuật</h3>
+  <ul>
+    <li><strong>Luôn normalize LLM output</strong> — không assume <code>content</code> là <code>str</code>. Viết helper <code>content_to_str()</code> và áp dụng tại tất cả điểm tiếp xúc với LLM response. Các model khác nhau (Gemma, Qwen, Claude) có format output khác nhau.</li>
+    <li><strong>create_react_agent không có tools = lãng phí</strong> — React agent luôn chạy ≥2 LLM turns (generate → check tools). Nếu không có tools, dùng <code>ainvoke</code> trực tiếp tiết kiệm ~50% thời gian mỗi agent.</li>
+    <li><strong>LLM call là bottleneck chính với local models</strong> — Mỗi call ~10–20s. Giảm số LLM calls (merge, bỏ synthesis) hiệu quả hơn nhiều so với tối ưu network hay code Python.</li>
+    <li><strong>max_tokens là lever quan trọng nhất</strong> — Với Ollama local, model sinh ~20–40 tokens/s. Giới hạn output tokens = giới hạn thời gian trực tiếp. 600 tokens ≈ 15–30s tuỳ hardware.</li>
+    <li><strong>System prompt ngắn ≠ chất lượng kém</strong> — Prompt 3 dòng focused cho kết quả ngang prompt 15 dòng verbose, nhưng fast hơn đáng kể vì ít token context phải xử lý.</li>
+    <li><strong>Thêm "Respond in same language as question"</strong> — Một dòng đơn giản giúp model tự xử lý ngôn ngữ, không cần detect hay translate thủ công.</li>
+  </ul>
+
+  <h3>🏗 Kiến trúc</h3>
+  <ul>
+    <li><strong>A2A protocol JSON-RPC</strong> — Method name phải chính xác. Đọc source code SDK (<code>.venv/Lib/site-packages/a2a/types.py</code>) là cách nhanh nhất để tìm đúng format, đừng đoán.</li>
+    <li><strong>CORS phải cấu hình ngay từ đầu</strong> — Nếu có client HTML/browser sẽ gọi vào services, thêm <code>CORSMiddleware</code> từ lúc thiết kế, không phải debug sau.</li>
+    <li><strong>LangGraph Send API cho parallel dispatch</strong> — Trả về <code>list[Send]</code> từ conditional edge function là cách đúng để fan-out parallel. Không dùng <code>asyncio.gather</code> bên ngoài graph.</li>
+    <li><strong>Registry service discovery</strong> — Thêm retry logic khi register (10 lần, delay 2s) vì Registry có thể chưa sẵn sàng khi leaf agents startup. Thứ tự khởi động quan trọng.</li>
+  </ul>
+
+  <h3>🛠 DevOps & Tooling</h3>
+  <ul>
+    <li><strong>.gitignore phải làm TRƯỚC khi <code>git add</code></strong> — Model binary, <code>.venv/</code>, <code>.env</code> phải trong <code>.gitignore</code> trước lần commit đầu tiên. Xóa sau bằng <code>git rm --cached</code> hoạt động được nhưng mất công.</li>
+    <li><strong>uv thay pip</strong> — Trong dự án dùng <code>uv</code>, phải dùng <code>uv pip install</code> hoặc <code>uv run</code>, không phải <code>pip install</code> hay <code>python -m</code> trực tiếp.</li>
+    <li><strong>PowerShell version matters</strong> — Syntax <code>?.</code>, <code>??</code>, ternary <code>? :</code> chỉ có trong PS 7+. Windows mặc định PS 5.1. Script production nên target PS 5.1 để không cần user cài thêm.</li>
+    <li><strong>Fallback strategy cho API key</strong> — Thiết kế <code>get_llm()</code> với priority: env flag → API key có → local fallback. Khi quota cạn, flip 1 biến môi trường là đủ, không cần sửa code.</li>
+  </ul>
+
+  <h3>💡 Process</h3>
+  <ul>
+    <li><strong>Test end-to-end sớm</strong> — Chạy <code>test_client.py</code> ngay sau khi có 5 services để xác nhận pipeline, không đợi đến khi UI xong.</li>
+    <li><strong>Debug từ ngoài vào</strong> — Khi pipeline fail: kiểm tra health <code>/.well-known/agent.json</code> trước, sau đó log, rồi mới code. Đừng sửa code khi chưa biết service có online không.</li>
+    <li><strong>Visualization giúp debug rất nhiều</strong> — Dashboard SVG với live log và timing giúp thấy ngay bottleneck (t-spec: 75s, t-analyze: 5s → rõ ràng Tax/Compliance là vấn đề) mà không cần đọc logs terminal.</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════
+     8. RESULTS
+═══════════════════════════════════════ -->
+<section id="s8">
+  <h2 class="sec"><span class="sec-num">08</span>Kết quả đạt được</h2>
+
+  <div class="callout ok"><strong>Demo thành công</strong>Hệ thống hoạt động end-to-end: nhận câu hỏi tiếng Việt, phân tích qua 3 agents song song, trả lời trong ~35–80s tuỳ câu hỏi.</div>
+
+  <h3>Checklist hoàn thành</h3>
+  <table>
+    <tr><th>Hạng mục</th><th>Trạng thái</th><th>Ghi chú</th></tr>
+    <tr><td>Stage 4 — in-process multi-agent</td><td class="ok-cell">✓ Done</td><td>Baseline hoạt động</td></tr>
+    <tr><td>Stage 5 — distributed A2A 5 services</td><td class="ok-cell">✓ Done</td><td>Registry + 4 agents</td></tr>
+    <tr><td>Lab Assignment — Supervisor-Workers</td><td class="ok-cell">✓ Done</td><td>4 nodes, Send API</td></tr>
+    <tr><td>Gemma list-content fix</td><td class="ok-cell">✓ Done</td><td>5 files patched</td></tr>
+    <tr><td>Ollama fallback (offline inference)</td><td class="ok-cell">✓ Done</td><td>qwen2.5:3b local</td></tr>
+    <tr><td>start_all.ps1 Windows compatible</td><td class="ok-cell">✓ Done</td><td>PS 5.1 safe</td></tr>
+    <tr><td>CORS headers</td><td class="ok-cell">✓ Done</td><td>5 services</td></tr>
+    <tr><td>Latency tối ưu</td><td class="ok-cell">✓ Done</td><td>114s → ~35s</td></tr>
+    <tr><td>Dashboard live visualization</td><td class="ok-cell">✓ Done</td><td>SVG + chatbot</td></tr>
+    <tr><td>Git push branch vhd_04</td><td class="ok-cell">✓ Done</td><td>Không có binary blobs</td></tr>
+    <tr><td>Hỗ trợ tiếng Việt</td><td class="ok-cell">✓ Done</td><td>"same language" prompt</td></tr>
+  </table>
+
+  <h3>Những điểm có thể cải thiện tiếp</h3>
+  <ul>
+    <li>Nâng model lên <strong>qwen2.5:7b</strong> hoặc <strong>llama3.2:3b</strong> để cải thiện chất lượng phân tích pháp lý, đặc biệt luật Việt Nam.</li>
+    <li>Thêm <strong>streaming</strong> (<code>message/stream</code>) để hiển thị response dần dần thay vì chờ hết.</li>
+    <li>Thêm <strong>RAG với tài liệu pháp lý Việt Nam</strong> (Bộ luật Dân sự, Luật thuế TNDN) vào Tax và Compliance agents.</li>
+    <li>Persistent <strong>conversation history</strong> — hiện tại mỗi query là independent context.</li>
+    <li>Deploy lên <strong>Docker Compose</strong> để portable hơn, không phụ thuộc môi trường local.</li>
+  </ul>
+</section>
+
+<footer>
+  Legal Multi-Agent System — Day 9 · AI20K Batch 02<br>
+  Stack: Python · LangGraph · A2A SDK · FastAPI · Ollama · LangChain
+</footer>
+
+</div>
+</body>
+</html>

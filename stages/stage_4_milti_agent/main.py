@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
 
-from common.llm import get_llm
+from common.llm import content_to_str, get_llm
 
 # ---------------------------------------------------------------------------
 # Tools for specialist sub-agents
@@ -138,8 +138,9 @@ async def analyze_law(state: LegalState) -> dict:
         HumanMessage(content=state["question"]),
     ]
     result = await llm.ainvoke(messages)
-    print(f"  [Node: analyze_law] Done ({len(result.content)} chars)")
-    return {"law_analysis": result.content}
+    text = content_to_str(result.content)
+    print(f"  [Node: analyze_law] Done ({len(text)} chars)")
+    return {"law_analysis": text}
 
 
 async def check_routing(state: LegalState) -> dict:
@@ -160,7 +161,7 @@ async def check_routing(state: LegalState) -> dict:
         HumanMessage(content=state["question"]),
     ]
     result = await llm.ainvoke(messages)
-    raw = result.content.strip()
+    raw = content_to_str(result.content).strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
@@ -208,7 +209,7 @@ async def call_tax_specialist(state: LegalState) -> dict:
     agent = create_react_agent(model=llm, tools=[search_tax_law], prompt=tax_prompt)
     result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
 
-    final_msg = result["messages"][-1].content
+    final_msg = content_to_str(result["messages"][-1].content)
     print(f"  [Node: call_tax_specialist] Done ({len(final_msg)} chars)")
     return {"tax_result": final_msg}
 
@@ -230,7 +231,7 @@ async def call_compliance_specialist(state: LegalState) -> dict:
     agent = create_react_agent(model=llm, tools=[search_compliance_law], prompt=compliance_prompt)
     result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
 
-    final_msg = result["messages"][-1].content
+    final_msg = content_to_str(result["messages"][-1].content)
     print(f"  [Node: call_compliance_specialist] Done ({len(final_msg)} chars)")
     return {"compliance_result": final_msg}
 
@@ -262,8 +263,9 @@ async def aggregate(state: LegalState) -> dict:
         HumanMessage(content=combined),
     ]
     result = await llm.ainvoke(messages)
-    print(f"  [Node: aggregate] Done ({len(result.content)} chars)")
-    return {"final_answer": result.content}
+    text = content_to_str(result.content)
+    print(f"  [Node: aggregate] Done ({len(text)} chars)")
+    return {"final_answer": text}
 
 
 # ---------------------------------------------------------------------------
