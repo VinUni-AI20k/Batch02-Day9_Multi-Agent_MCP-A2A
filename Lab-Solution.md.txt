@@ -1,0 +1,310 @@
+"""Bài Tập 2: Thêm Tools và Knowledge Base
+
+Hoàn thành các TODO để thêm tool và knowledge base entry mới.
+"""
+
+import asyncio
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain_core.tools import tool
+
+from common.llm import get_llm
+
+# Knowledge base
+LEGAL_KNOWLEDGE = [
+    {
+        "id": "ucc_breach",
+        "keywords": ["breach", "contract", "remedies", "damages", "ucc"],
+        "text": (
+            "Under the Uniform Commercial Code (UCC) Article 2, remedies for breach of contract "
+            "include: (1) expectation damages; (2) consequential damages; (3) specific performance; "
+            "(4) cover damages. Statute of limitations is typically 4 years (UCC § 2-725)."
+        ),
+    },
+    # TODO 1: Thêm entry về luật lao động Việt Nam
+    {
+        "id": "vn_labor_law",
+        "keywords": ["lao động", "sa thải", "kỷ luật", "hợp đồng", "nghỉ việc"],
+        "text": (
+            "Theo Bộ luật Lao động 2019 của Việt Nam, người sử dụng lao động chỉ được quyền "
+            "đơn phương chấm dứt hợp đồng lao động hoặc sa thải người lao động trong các trường "
+            "hợp cụ thể được pháp luật quy định (như Điều 36, Điều 125). Người lao động bị sa thải "
+            "trái pháp luật có quyền yêu cầu nhận lại làm việc và bồi thường thiệt hại."
+        ),
+    }
+]
+
+
+@tool
+def search_legal_knowledge(query: str) -> str:
+    """Tìm kiếm trong knowledge base pháp lý."""
+    query_lower = query.lower()
+    for entry in LEGAL_KNOWLEDGE:
+        if any(kw in query_lower for kw in entry["keywords"]):
+            return f"[{entry['id']}] {entry['text']}"
+    return "Không tìm thấy thông tin liên quan."
+
+
+# TODO 2: Tạo tool check_statute_of_limitations
+@tool
+def check_statute_of_limitations(case_type: str) -> str:
+    """Kiểm tra thời hiệu khởi kiện cho các loại vụ án khác nhau (ví dụ: 'hợp đồng', 'lao động', 'thừa kế')."""
+    case_type_lower = case_type.lower()
+    
+    if "hợp đồng" in case_type_lower or "contract" in case_type_lower:
+        return "Thời hiệu khởi kiện để yêu cầu Tòa án giải quyết tranh chấp hợp đồng là 03 năm, kể từ ngày người có quyền yêu cầu biết hoặc phải biết quyền và lợi ích hợp pháp của mình bị xâm phạm (theo Điều 429 Bộ luật Dân sự 2015)."
+    elif "lao động" in case_type_lower or "labor" in case_type_lower:
+        return "Thời hiệu yêu cầu Tòa án giải quyết tranh chấp lao động cá nhân là 01 năm, kể từ ngày phát hiện ra hành vi mà mỗi bên tranh chấp cho rằng quyền, lợi ích hợp pháp của mình bị vi phạm (theo Điều 190 Bộ luật Lao động 2019)."
+    elif "thừa kế" in case_type_lower or "inheritance" in case_type_lower:
+        return "Thời hiệu để người thừa kế yêu cầu chia di sản là 30 năm đối với bất động sản, 10 năm đối với động sản, kể từ thời điểm mở thừa kế (theo Điều 623 Bộ luật Dân sự 2015)."
+    else:
+        return f"Chưa có thông tin cụ thể về thời hiệu khởi kiện cho loại vụ án: {case_type}. Vui lòng cung cấp thêm chi tiết."
+
+
+async def main():
+    load_dotenv()
+    llm = get_llm()
+    
+    # TODO 3: Thêm tool mới vào danh sách
+    tools = [search_legal_knowledge, check_statute_of_limitations]
+    llm_with_tools = llm.bind_tools(tools)
+    
+    question = "Thời hiệu khởi kiện vụ vi phạm hợp đồng là bao lâu?"
+    
+    messages = [
+        SystemMessage(content="Bạn là chuyên gia pháp lý. Sử dụng tools để tra cứu thông tin. Luôn trả lời bằng tiếng Việt."),
+        HumanMessage(content=question),
+    ]
+    
+    print(f"Câu hỏi: {question}\n")
+    
+    # First LLM call - decide which tools to use
+    response = await llm_with_tools.ainvoke(messages)
+    messages.append(response)
+    
+    # Execute tools if requested
+    if response.tool_calls:
+        for tool_call in response.tool_calls:
+            print(f"🔧 Gọi tool: {tool_call['name']}")
+            tool_result = None
+            
+            if tool_call["name"] == "search_legal_knowledge":
+                tool_result = search_legal_knowledge.invoke(tool_call["args"])
+            # TODO 4: Thêm xử lý cho check_statute_of_limitations
+            elif tool_call["name"] == "check_statute_of_limitations":
+                tool_result = check_statute_of_limitations.invoke(tool_call["args"])
+            
+            if tool_result:
+                messages.append(ToolMessage(content=tool_result, tool_call_id=tool_call["id"]))
+        
+        # Second LLM call - synthesize final answer
+        final_response = await llm_with_tools.ainvoke(messages)
+        print(f"\n✅ Kết quả:\n{final_response.content}")
+    else:
+        print(f"\n✅ Kết quả:\n{response.content}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+
+"""Bài Tập 4: Thêm Privacy Agent vào Multi-Agent System
+
+Hoàn thành các TODO để thêm privacy agent và conditional routing.
+"""
+
+import asyncio
+import os
+import sys
+from typing import Annotated, TypedDict
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage
+from langgraph.graph import END, START, StateGraph
+from langgraph.types import Send
+
+from common.llm import get_llm
+
+
+def _last_wins(left: str | None, right: str | None) -> str:
+    """Reducer: giá trị mới ghi đè giá trị cũ."""
+    return right if right is not None else (left or "")
+
+
+class State(TypedDict):
+    question: str
+    law_analysis: Annotated[str, _last_wins]
+    tax_analysis: Annotated[str, _last_wins]
+    compliance_analysis: Annotated[str, _last_wins]
+    privacy_analysis: Annotated[str, _last_wins]  # Đã thêm field cho Privacy Agent
+    final_response: str
+
+
+def law_agent(state: State) -> dict:
+    """Agent phân tích pháp lý tổng quát."""
+    llm = get_llm()
+    prompt = f"""Bạn là chuyên gia pháp lý. Phân tích câu hỏi sau:
+
+{state['question']}
+
+Tập trung vào: hợp đồng, trách nhiệm dân sự, quyền và nghĩa vụ pháp lý."""
+    
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return {"law_analysis": response.content}
+
+
+def check_routing(state: State) -> list[Send]:
+    """Quyết định gọi agents nào dựa trên nội dung câu hỏi."""
+    question_lower = state["question"].lower()
+    tasks = []
+    
+    if any(kw in question_lower for kw in ["tax", "irs", "thuế"]):
+        tasks.append(Send("tax_agent", state))
+    
+    if any(kw in question_lower for kw in ["compliance", "sec", "regulation"]):
+        tasks.append(Send("compliance_agent", state))
+    
+    # Đã thêm logic routing cho privacy_agent
+    if any(kw in question_lower for kw in ["data", "privacy", "gdpr", "dữ liệu", "rò rỉ", "bảo mật"]):
+        tasks.append(Send("privacy_agent", state))
+    
+    return tasks if tasks else [Send("aggregate_results", state)]
+
+
+def tax_agent(state: State) -> dict:
+    """Agent chuyên về thuế."""
+    llm = get_llm()
+    prompt = f"""Bạn là chuyên gia thuế. Phân tích khía cạnh thuế trong câu hỏi:
+
+Câu hỏi: {state['question']}
+Phân tích pháp lý: {state.get('law_analysis', 'N/A')}
+
+Tập trung: IRS, tax evasion, penalties, FBAR, FATCA."""
+    
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return {"tax_analysis": response.content}
+
+
+def compliance_agent(state: State) -> dict:
+    """Agent chuyên về compliance."""
+    llm = get_llm()
+    prompt = f"""Bạn là chuyên gia compliance. Phân tích khía cạnh tuân thủ:
+
+Câu hỏi: {state['question']}
+Phân tích pháp lý: {state.get('law_analysis', 'N/A')}
+
+Tập trung: SEC, SOX, FCPA, AML, regulatory violations."""
+    
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return {"compliance_analysis": response.content}
+
+
+# Đã implement privacy_agent
+def privacy_agent(state: State) -> dict:
+    """Agent chuyên về bảo vệ dữ liệu cá nhân và GDPR."""
+    llm = get_llm()
+    prompt = f"""Bạn là chuyên gia về bảo mật dữ liệu và quyền riêng tư (Privacy Expert). Phân tích khía cạnh bảo vệ dữ liệu:
+
+Câu hỏi: {state['question']}
+Phân tích pháp lý: {state.get('law_analysis', 'N/A')}
+
+Tập trung: Quy định GDPR, luật bảo vệ dữ liệu cá nhân (PDPA/Nghị định 13 tại VN), privacy rights, data breach (rò rỉ dữ liệu) và các hình phạt liên quan."""
+    
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return {"privacy_analysis": response.content}
+
+
+def aggregate_results(state: State) -> dict:
+    """Tổng hợp kết quả từ tất cả agents."""
+    llm = get_llm()
+    
+    sections = []
+    if state.get("law_analysis"):
+        sections.append(f"📋 PHÂN TÍCH PHÁP LÝ:\n{state['law_analysis']}")
+    if state.get("tax_analysis"):
+        sections.append(f"💰 PHÂN TÍCH THUẾ:\n{state['tax_analysis']}")
+    if state.get("compliance_analysis"):
+        sections.append(f"✅ PHÂN TÍCH TUÂN THỦ:\n{state['compliance_analysis']}")
+    
+    # Đã thêm privacy_analysis vào sections
+    if state.get("privacy_analysis"):
+        sections.append(f"🔒 PHÂN TÍCH QUYỀN RIÊNG TƯ & DỮ LIỆU:\n{state['privacy_analysis']}")
+    
+    combined = "\n\n".join(sections)
+    
+    prompt = f"""Tổng hợp các phân tích sau thành một báo cáo pháp lý hoàn chỉnh:
+
+{combined}
+
+Câu hỏi gốc: {state['question']}
+
+Hãy tạo một báo cáo ngắn gọn, có cấu trúc rõ ràng."""
+    
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return {"final_response": response.content}
+
+
+def build_graph() -> StateGraph:
+    """Xây dựng multi-agent graph."""
+    graph = StateGraph(State)
+    
+    # Add nodes
+    graph.add_node("law_agent", law_agent)
+    graph.add_node("tax_agent", tax_agent)
+    graph.add_node("compliance_agent", compliance_agent)
+    graph.add_node("privacy_agent", privacy_agent)
+    graph.add_node("aggregate_results", aggregate_results)
+    
+    # Define edges
+    graph.add_edge(START, "law_agent")
+    
+    # SỬA Ở ĐÂY: Gắn trực tiếp hàm check_routing thành luồng rẽ nhánh (conditional edge) sau law_agent
+    graph.add_conditional_edges("law_agent", check_routing)
+    
+    graph.add_edge("tax_agent", "aggregate_results")
+    graph.add_edge("compliance_agent", "aggregate_results")
+    graph.add_edge("privacy_agent", "aggregate_results")
+    graph.add_edge("aggregate_results", END)
+    
+    return graph.compile()
+
+
+async def main():
+    load_dotenv()
+    
+    # Test với câu hỏi có liên quan đến privacy
+    question = "Nếu công ty bị rò rỉ dữ liệu khách hàng, hậu quả pháp lý và thuế là gì?"
+    
+    print("=" * 70)
+    print("MULTI-AGENT SYSTEM với Privacy Agent")
+    print("=" * 70)
+    print(f"\nCâu hỏi: {question}\n")
+    print("Đang xử lý qua các agents...\n")
+    
+    graph = build_graph()
+    
+    result = await graph.ainvoke({
+        "question": question,
+        "law_analysis": "",
+        "tax_analysis": "",
+        "compliance_analysis": "",
+        "privacy_analysis": "",
+        "final_response": "",
+    })
+    
+    print("\n" + "=" * 70)
+    print("KẾT QUẢ CUỐI CÙNG")
+    print("=" * 70)
+    print(result["final_response"])
+    print("\n" + "=" * 70)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
