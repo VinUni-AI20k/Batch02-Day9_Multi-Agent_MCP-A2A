@@ -78,6 +78,11 @@ async def delegate(
 
         response = await client.send_message(request)
 
+        logger.info(
+            "[TRACE] trace_id=%s | depth=%d | target=%s | response_received=true",
+            trace_id, depth, endpoint,
+        )
+
         # Extract text from SendMessageResponse
         return _extract_text(response)
 

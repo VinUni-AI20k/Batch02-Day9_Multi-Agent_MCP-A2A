@@ -81,6 +81,19 @@ LEGAL_KNOWLEDGE = [
             "public interest (Winter v. Natural Resources Defense Council, 2008)."
         ),
     },
+    {
+        "id": "labor_law",
+        "keywords": ["lao động", "sa thải", "hợp đồng lao động", "labor", "termination", "firing", "dismissal"],
+        "text": (
+            "Theo Bộ luật Lao động Việt Nam 2019, người sử dụng lao động có thể "
+            "đơn phương chấm dứt hợp đồng trong các trường hợp: (1) người lao động "
+            "thường xuyên không hoàn thành công việc; (2) bị ốm đau, tai nạn đã điều trị "
+            "12 tháng chưa khỏi; (3) thiên tai, hỏa hoạn; (4) người lao động đủ tuổi nghỉ hưu. "
+            "Nếu sa thải trái pháp luật, người sử dụng lao động phải: (1) nhận lại người lao động "
+            "và trả đủ tiền lương, BHXH trong thời gian bị sa thải; (2) bồi thường ít nhất "
+            "2 tháng tiền lương theo Điều 41 BLLĐ 2019."
+        ),
+    },
 ]
 
 
@@ -135,7 +148,23 @@ def calculate_damages(breach_type: str, contract_value: float) -> str:
     )
 
 
-TOOLS = [search_legal_database, calculate_damages]
+@tool
+def check_statute_of_limitations(case_type: str) -> str:
+    """Kiểm tra thời hiệu khởi kiện theo loại vụ án.
+
+    Args:
+        case_type: Loại vụ án (contract, tort, property, labor)
+    """
+    limits = {
+        "contract": "4 năm (UCC § 2-725)",
+        "tort": "2-3 năm tùy bang",
+        "property": "5 năm",
+        "labor": "1 năm kể từ ngày bị sa thải (Bộ luật Lao động Việt Nam 2019, Điều 190)",
+    }
+    return limits.get(case_type.lower(), "Không xác định thời hiệu cho loại vụ án này")
+
+
+TOOLS = [search_legal_database, calculate_damages, check_statute_of_limitations]
 
 QUESTION = "What are the legal consequences if a company breaches a non-disclosure agreement?"
 
