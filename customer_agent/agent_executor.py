@@ -12,6 +12,7 @@ from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
+from common.message_utils import content_to_text
 from customer_agent.graph import build_graph
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class CustomerAgentExecutor(AgentExecutor):
                         # Skip ToolMessages, only want final AIMessage
                         from langchain_core.messages import AIMessage
                         if isinstance(msg, AIMessage):
-                            answer = msg.content
+                            answer = content_to_text(msg.content)
                             break
 
             if not answer:
@@ -68,7 +69,7 @@ class CustomerAgentExecutor(AgentExecutor):
                 for msg in reversed(result.get("messages", [])):
                     content = getattr(msg, "content", "")
                     if content and not isinstance(msg, HumanMessage):
-                        answer = content
+                        answer = content_to_text(content)
                         break
 
             if not answer:

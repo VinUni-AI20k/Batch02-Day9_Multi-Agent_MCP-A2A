@@ -1,0 +1,10 @@
+services:
+  legal-multiagent-ui:
+    build: .
+    ports:
+      - "8008:8008"
+    env_file:
+      - .env
+    volumes:
+      - ./.stage5_logs:/app/.stage5_logs
+    restart: unless-stopped

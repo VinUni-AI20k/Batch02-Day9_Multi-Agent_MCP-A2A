@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Legal Multi-Agent Demo</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Stage 5 Distributed Demo</p>
+          <h1>Legal Multi-Agent Control Room</h1>
+          <p class="lede">
+            Ask the customer agent a legal question, inspect which services are alive,
+            and watch the network logs update in one browser tab.
+          </p>
+        </div>
+        <div class="hero-panel">
+          <div class="hero-stat">
+            <span class="hero-label">UI Port</span>
+            <strong id="ui-port">8008</strong>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-label">Registry</span>
+            <strong>10000</strong>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-label">Agents</span>
+            <strong>10100-10103</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Service Status</h2>
+            <button id="refresh-status" class="secondary-button" type="button">Refresh</button>
+          </div>
+          <div id="service-grid" class="service-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Ask The Agent Network</h2>
+            <span id="request-state" class="badge neutral">Idle</span>
+          </div>
+          <form id="ask-form" class="ask-form">
+            <label for="question">Question</label>
+            <textarea id="question" name="question" rows="6">If a company breaks a contract and avoids taxes, what are the legal and regulatory consequences?</textarea>
+            <div class="form-actions">
+              <button id="submit-button" class="primary-button" type="submit">Send To Customer Agent</button>
+              <button id="load-logs" class="secondary-button" type="button">Refresh Logs</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel response-panel">
+          <div class="panel-head">
+            <h2>Agent Response</h2>
+            <span class="hint">Errors from the agent network are surfaced here directly.</span>
+          </div>
+          <pre id="response-box" class="response-box">No request sent yet.</pre>
+        </section>
+
+        <section class="panel logs-panel">
+          <div class="panel-head">
+            <h2>Recent Logs</h2>
+            <span class="hint">Last 40 lines from each service log file</span>
+          </div>
+          <div id="logs-container" class="logs-container"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

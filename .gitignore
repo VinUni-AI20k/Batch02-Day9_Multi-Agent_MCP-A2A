@@ -3,3 +3,5 @@
 **cache**
 .claude
 **SOLUTION**
+.stage5_logs/
+dist/

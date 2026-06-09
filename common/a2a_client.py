@@ -46,9 +46,19 @@ async def delegate(
     """
     async with httpx.AsyncClient(timeout=300.0) as http_client:
         # Fetch agent card
-        card_url = f"{endpoint}/.well-known/agent.json"
-        card_resp = await http_client.get(card_url)
-        card_resp.raise_for_status()
+        card_resp = None
+        for path in ("/.well-known/agent-card.json", "/.well-known/agent.json"):
+            card_url = f"{endpoint}{path}"
+            resp = await http_client.get(card_url)
+            if resp.is_success:
+                card_resp = resp
+                break
+        if card_resp is None:
+            raise httpx.HTTPStatusError(
+                f"Could not resolve agent card from {endpoint}",
+                request=resp.request,
+                response=resp,
+            )
         agent_card = AgentCard.model_validate(card_resp.json())
 
         # Build deprecated (legacy) A2AClient — straightforward for send_message
@@ -111,11 +121,21 @@ def _extract_text(response: object) -> str:
         for part in parts:
             text += _part_text(part)
 
-    # Task history messages as fallback
+    # Failed tasks often carry the useful error text here.
+    if not text:
+        status = getattr(result, "status", None)
+        status_message = getattr(status, "message", None)
+        status_parts = getattr(status_message, "parts", None) or []
+        for part in status_parts:
+            text += _part_text(part)
+
+    # Task history messages as a final fallback, but ignore user echoes.
     if not text:
         history = getattr(result, "history", None)
         if history:
             for msg in history:
+                if getattr(msg, "role", None) == "user":
+                    continue
                 msg_parts = getattr(msg, "parts", []) or []
                 for part in msg_parts:
                     text += _part_text(part)

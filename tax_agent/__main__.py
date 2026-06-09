@@ -27,9 +27,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PORT = 10102
-AGENT_ENDPOINT = f"http://localhost:{PORT}"
-REGISTRY_URL = os.getenv("REGISTRY_URL", "http://localhost:10000")
+PORT = int(os.getenv("TAX_AGENT_PORT", "10102"))
+AGENT_ENDPOINT = os.getenv("TAX_AGENT_URL", f"http://localhost:{PORT}")
 
 
 async def _register_with_retry(max_attempts: int = 10, delay: float = 2.0) -> None:
