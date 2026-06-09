@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent A2A Visualizer</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .network {
+            position: relative;
+            height: 500px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .node {
+            position: absolute;
+            width: 140px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .node.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            transform: scale(1.05);
+        }
+
+        .node.success {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+
+        .node-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .node-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .node-port {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Positions */
+        #user { top: 200px; left: 20px; }
+        #customer { top: 200px; left: 220px; }
+        #law { top: 200px; left: 450px; }
+        #registry { top: 20px; left: 450px; }
+        #tax { top: 100px; left: 750px; }
+        #compliance { top: 300px; left: 750px; }
+
+        /* Messages */
+        .message {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            z-index: 1;
+            opacity: 0;
+            box-shadow: 0 0 10px var(--primary);
+            pointer-events: none;
+        }
+
+        .log-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .log-time { color: var(--text-muted); }
+        .log-info { color: var(--primary); }
+        .log-success { color: var(--success); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>A2A Network Visualizer</h1>
+        <p>Phóng viên: Hệ thống Microservice đa tác vụ (Stage 5)</p>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <button id="btn-simulate" onclick="startSimulation()">Chạy Demo Song Song</button>
+            <button id="btn-reset" onclick="reset()" style="background: transparent; border: 1px solid var(--text-muted);">Reset</button>
+        </div>
+
+        <div class="network" id="network">
+            <div class="node" id="user">
+                <div class="node-icon">👤</div>
+                <div class="node-name">Test Client</div>
+            </div>
+            <div class="node" id="customer">
+                <div class="node-icon">🎧</div>
+                <div class="node-name">Customer Agent</div>
+                <div class="node-port">Port: 10100</div>
+            </div>
+            <div class="node" id="law">
+                <div class="node-icon">⚖️</div>
+                <div class="node-name">Law Agent</div>
+                <div class="node-port">Port: 10101</div>
+            </div>
+            <div class="node" id="registry">
+                <div class="node-icon">📇</div>
+                <div class="node-name">Registry</div>
+                <div class="node-port">Port: 10000</div>
+            </div>
+            <div class="node" id="tax">
+                <div class="node-icon">💰</div>
+                <div class="node-name">Tax Agent</div>
+                <div class="node-port">Port: 10102</div>
+            </div>
+            <div class="node" id="compliance">
+                <div class="node-icon">🛡️</div>
+                <div class="node-name">Compliance Agent</div>
+                <div class="node-port">Port: 10103</div>
+            </div>
+        </div>
+
+        <div class="log-panel" id="log-panel">
+            <div class="log-entry"><span class="log-time">[System]</span> Hệ thống sẵn sàng. Bấm "Chạy Demo Song Song" để bắt đầu...</div>
+        </div>
+    </div>
+
+    <script>
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        function log(msg, type = 'info') {
+            const panel = document.getElementById('log-panel');
+            const time = new Date().toLocaleTimeString();
+            const colorClass = type === 'success' ? 'log-success' : 'log-info';
+            panel.innerHTML += `<div class="log-entry"><span class="log-time">[${time}]</span> <span class="${colorClass}">${msg}</span></div>`;
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        function getCenter(el) {
+            const rect = el.getBoundingClientRect();
+            const parentRect = document.getElementById('network').getBoundingClientRect();
+            return {
+                x: rect.left - parentRect.left + rect.width / 2 - 10,
+                y: rect.top - parentRect.top + rect.height / 2 - 10
+            };
+        }
+
+        async function animateMessage(fromId, toId, duration = 800) {
+            const from = document.getElementById(fromId);
+            const to = document.getElementById(toId);
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            
+            const start = getCenter(from);
+            const end = getCenter(to);
+
+            msg.style.left = `${start.x}px`;
+            msg.style.top = `${start.y}px`;
+            document.getElementById('network').appendChild(msg);
+
+            // Animate
+            msg.style.opacity = '1';
+            msg.style.transition = `all ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+            
+            // Trigger reflow
+            void msg.offsetWidth;
+            
+            msg.style.left = `${end.x}px`;
+            msg.style.top = `${end.y}px`;
+
+            await delay(duration);
+            msg.remove();
+            
+            to.classList.add('active');
+            setTimeout(() => to.classList.remove('active'), 1000);
+        }
+
+        function setNodeState(id, state) {
+            const node = document.getElementById(id);
+            node.className = `node ${state}`;
+        }
+
+        function reset() {
+            document.querySelectorAll('.node').forEach(n => n.className = 'node');
+            document.querySelectorAll('.message').forEach(m => m.remove());
+            document.getElementById('log-panel').innerHTML = '<div class="log-entry"><span class="log-time">[System]</span> Hệ thống đã được reset.</div>';
+            document.getElementById('btn-simulate').disabled = false;
+        }
+
+        async function startSimulation() {
+            document.getElementById('btn-simulate').disabled = true;
+            reset();
+            
+            log("User gửi câu hỏi: 'Hậu quả pháp lý của việc trốn thuế là gì?'");
+            setNodeState('user', 'active');
+            await animateMessage('user', 'customer');
+            
+            setNodeState('customer', 'active');
+            log("Customer Agent tiếp nhận và uỷ quyền (delegate) cho Law Agent.");
+            await animateMessage('customer', 'law');
+
+            setNodeState('law', 'active');
+            log("Law Agent phân tích: Cần chuyên gia Thuế và Bảo mật. Đang hỏi Registry...");
+            await animateMessage('law', 'registry');
+            
+            setNodeState('registry', 'active');
+            log("Registry trả về địa chỉ IP của Tax Agent và Compliance Agent.", 'success');
+            await animateMessage('registry', 'law');
+            
+            setNodeState('registry', '');
+            
+            log("Law Agent KÍCH HOẠT CHẠY SONG SONG (Parallel Execution) ⚡", 'warning');
+            
+            // Parallel execution animation
+            const p1 = (async () => {
+                await animateMessage('law', 'tax');
+                setNodeState('tax', 'active');
+                log("Tax Agent đang phân tích luật Thuế (LLM Inference)...");
+                await delay(1500); // Simulate LLM thinking
+                setNodeState('tax', 'success');
+                log("Tax Agent phân tích xong! Trả kết quả.", 'success');
+                await animateMessage('tax', 'law');
+            })();
+
+            const p2 = (async () => {
+                await animateMessage('law', 'compliance');
+                setNodeState('compliance', 'active');
+                log("Compliance Agent đang phân tích quy định bảo mật (LLM Inference)...");
+                await delay(1200); // Simulate LLM thinking
+                setNodeState('compliance', 'success');
+                log("Compliance Agent phân tích xong! Trả kết quả.", 'success');
+                await animateMessage('compliance', 'law');
+            })();
+
+            await Promise.all([p1, p2]);
+            
+            setNodeState('law', 'success');
+            log("Law Agent đã gom đủ kết quả. Đang nối chuỗi KHÔNG DÙNG LLM (Fast Aggregation) ⚡", 'warning');
+            await delay(500);
+            
+            log("Tổng hợp hoàn tất. Trả về cho Customer Agent.");
+            await animateMessage('law', 'customer');
+            
+            setNodeState('customer', 'success');
+            log("Customer Agent trả báo cáo tổng hợp cho Test Client.");
+            await animateMessage('customer', 'user');
+            
+            setNodeState('user', 'success');
+            log("🎉 HOÀN THÀNH! Latency đã được tối ưu giảm từ 30s xuống còn ~15s!", 'success');
+            
+            document.getElementById('btn-simulate').disabled = false;
+        }
+    </script>
+</body>
+</html>
