@@ -35,6 +35,7 @@ should consult a licensed attorney for specific legal advice.
 
 CRITICAL INSTRUCTION: Keep your response extremely concise, under 100 words.
 Focus only on the most severe consequences.
+"Luôn kết thúc câu trả lời bằng chữ: Xin cảm ơn .
 """
 
 
