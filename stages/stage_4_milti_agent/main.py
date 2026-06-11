@@ -4,13 +4,14 @@ Multiple specialised agents collaborate on a complex legal question.
 This mirrors Stage 5's architecture (law_agent/graph.py) but runs
 entirely in-process — no HTTP, no A2A protocol, no separate servers.
 
-Graph: analyze_law -> check_routing -> parallel [call_tax, call_compliance] -> aggregate -> END
+Graph: analyze_law -> check_routing -> parallel [call_tax, call_compliance, call_privacy] -> aggregate -> END
 """
 
 import asyncio
 import json
 import os
 import sys
+import warnings
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -94,14 +95,51 @@ def search_compliance_law(query: str) -> str:
     return "\n\n".join(results) if results else "No specific compliance matches found."
 
 
+@tool
+def search_privacy_law(query: str) -> str:
+    """Search privacy and data protection knowledge base.
+
+    Args:
+        query: Natural language query about privacy, data protection, or data breaches.
+    """
+    knowledge = [
+        (
+            ["data", "privacy", "gdpr", "breach", "personal", "dữ liệu"],
+            "GDPR: fines up to 4% of global annual turnover or EUR 20M, whichever is higher. "
+            "Controllers must implement appropriate security, notify supervisory authorities "
+            "within 72 hours when required, and communicate high-risk breaches to affected data subjects.",
+        ),
+        (
+            ["ccpa", "consumer", "california", "sale", "sharing"],
+            "CCPA/CPRA: California consumers have rights to know, delete, correct, opt out of sale or "
+            "sharing, and limit sensitive personal information use. Intentional violations can reach "
+            "$7,500 per violation, with private action exposure for certain data breaches.",
+        ),
+        (
+            ["consent", "processing", "transfer", "cross-border"],
+            "Privacy programs should document lawful basis, consent where required, data processing "
+            "agreements, cross-border transfer mechanisms, retention limits, and data subject request workflows.",
+        ),
+    ]
+    query_lower = query.lower()
+    results = []
+    for keywords, text in knowledge:
+        if any(kw in query_lower for kw in keywords):
+            results.append(text)
+    return "\n\n".join(results) if results else "No specific privacy law matches found."
+
+
 # ---------------------------------------------------------------------------
 # State definition (mirrors law_agent/graph.py)
 # ---------------------------------------------------------------------------
 
 from typing import Annotated, TypedDict
 
-from langgraph.constants import Send
 from langgraph.graph import END, StateGraph
+from langgraph.types import Send
+from langgraph.warnings import LangGraphDeprecatedSinceV10
+
+warnings.filterwarnings("ignore", category=LangGraphDeprecatedSinceV10)
 
 
 def _last_wins(a: str, b: str) -> str:
@@ -109,13 +147,20 @@ def _last_wins(a: str, b: str) -> str:
     return b if b else a
 
 
+def _error_summary(exc: Exception) -> str:
+    """Return a compact error string for codelab output."""
+    return f"{type(exc).__name__}: {exc}"
+
+
 class LegalState(TypedDict):
     question: str
     law_analysis: str
     needs_tax: bool
     needs_compliance: bool
+    needs_privacy: bool
     tax_result: Annotated[str, _last_wins]
     compliance_result: Annotated[str, _last_wins]
+    privacy_result: Annotated[str, _last_wins]
     final_answer: str
 
 
@@ -126,56 +171,75 @@ class LegalState(TypedDict):
 async def analyze_law(state: LegalState) -> dict:
     """Lead attorney analyses the legal aspects of the question."""
     print("\n  [Node: analyze_law] Lead attorney analysing legal aspects...")
-    llm = get_llm()
-    messages = [
-        SystemMessage(
-            content=(
-                "You are a senior corporate litigation attorney specialising in contract law, "
-                "tort law, and general business law. Analyse the legal aspects of the question "
-                "thoroughly. Keep your analysis under 200 words."
-            )
-        ),
-        HumanMessage(content=state["question"]),
-    ]
-    result = await llm.ainvoke(messages)
-    print(f"  [Node: analyze_law] Done ({len(result.content)} chars)")
-    return {"law_analysis": result.content}
+    try:
+        llm = get_llm()
+        messages = [
+            SystemMessage(
+                content=(
+                    "You are a senior corporate litigation attorney specialising in contract law, "
+                    "tort law, and general business law. Analyse the legal aspects of the question "
+                    "thoroughly. Keep your analysis under 200 words."
+                )
+            ),
+            HumanMessage(content=state["question"]),
+        ]
+        result = await llm.ainvoke(messages)
+        print(f"  [Node: analyze_law] Done ({len(result.content)} chars)")
+        return {"law_analysis": result.content}
+    except Exception as exc:
+        error = _error_summary(exc)
+        print(f"  [Node: analyze_law] Failed: {error}")
+        return {"law_analysis": f"[Lead legal analysis unavailable: {error}]"}
 
 
 async def check_routing(state: LegalState) -> dict:
     """Routing node: determine which specialist sub-agents are needed."""
     print("\n  [Node: check_routing] Determining which specialists are needed...")
-    llm = get_llm()
-    messages = [
-        SystemMessage(
-            content=(
-                'You are a legal routing expert. Based on the question, decide whether '
-                'specialist sub-agents are needed.\n'
-                'Reply with ONLY valid JSON — no markdown, no extra text:\n'
-                '{"needs_tax": <true|false>, "needs_compliance": <true|false>}\n\n'
-                'needs_tax = true  → question involves tax law, IRS, tax evasion, penalties\n'
-                'needs_compliance = true → question involves regulatory compliance, SEC, SOX, AML, FCPA'
-            )
-        ),
-        HumanMessage(content=state["question"]),
-    ]
-    result = await llm.ainvoke(messages)
-    raw = result.content.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip()
-
     try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        parsed = {"needs_tax": True, "needs_compliance": True}
+        llm = get_llm()
+        messages = [
+            SystemMessage(
+                content=(
+                    'You are a legal routing expert. Based on the question, decide whether '
+                    'specialist sub-agents are needed.\n'
+                    'Reply with ONLY valid JSON — no markdown, no extra text:\n'
+                    '{"needs_tax": <true|false>, "needs_compliance": <true|false>, '
+                    '"needs_privacy": <true|false>}\n\n'
+                    'needs_tax = true  → question involves tax law, IRS, tax evasion, penalties\n'
+                    'needs_compliance = true → question involves regulatory compliance, SEC, SOX, AML, FCPA\n'
+                    'needs_privacy = true → question involves data, privacy, GDPR, CCPA, or personal information'
+                )
+            ),
+            HumanMessage(content=state["question"]),
+        ]
+        result = await llm.ainvoke(messages)
+        raw = result.content.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            parsed = {"needs_tax": True, "needs_compliance": True, "needs_privacy": True}
+    except Exception as exc:
+        print(f"  [Node: check_routing] Failed: {_error_summary(exc)}")
+        parsed = {"needs_tax": True, "needs_compliance": True, "needs_privacy": True}
 
     needs_tax = bool(parsed.get("needs_tax", True))
     needs_compliance = bool(parsed.get("needs_compliance", True))
-    print(f"  [Node: check_routing] needs_tax={needs_tax}, needs_compliance={needs_compliance}")
-    return {"needs_tax": needs_tax, "needs_compliance": needs_compliance}
+    needs_privacy = bool(parsed.get("needs_privacy", True))
+    print(
+        "  [Node: check_routing] "
+        f"needs_tax={needs_tax}, needs_compliance={needs_compliance}, needs_privacy={needs_privacy}"
+    )
+    return {
+        "needs_tax": needs_tax,
+        "needs_compliance": needs_compliance,
+        "needs_privacy": needs_privacy,
+    }
 
 
 def route_to_specialists(state: LegalState) -> list[Send]:
@@ -185,6 +249,8 @@ def route_to_specialists(state: LegalState) -> list[Send]:
         sends.append(Send("call_tax_specialist", state))
     if state.get("needs_compliance"):
         sends.append(Send("call_compliance_specialist", state))
+    if state.get("needs_privacy"):
+        sends.append(Send("privacy_agent", state))
     if not sends:
         sends.append(Send("aggregate", state))
     return sends
@@ -204,13 +270,18 @@ async def call_tax_specialist(state: LegalState) -> dict:
         "Use the search_tax_law tool to ground your analysis. Keep your response under 200 words."
     )
 
-    llm = get_llm()
-    agent = create_react_agent(model=llm, tools=[search_tax_law], prompt=tax_prompt)
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
+    try:
+        llm = get_llm()
+        agent = create_react_agent(model=llm, tools=[search_tax_law], prompt=tax_prompt)
+        result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
 
-    final_msg = result["messages"][-1].content
-    print(f"  [Node: call_tax_specialist] Done ({len(final_msg)} chars)")
-    return {"tax_result": final_msg}
+        final_msg = result["messages"][-1].content
+        print(f"  [Node: call_tax_specialist] Done ({len(final_msg)} chars)")
+        return {"tax_result": final_msg}
+    except Exception as exc:
+        error = _error_summary(exc)
+        print(f"  [Node: call_tax_specialist] Failed: {error}")
+        return {"tax_result": f"[Tax analysis unavailable: {error}]"}
 
 
 async def call_compliance_specialist(state: LegalState) -> dict:
@@ -226,19 +297,50 @@ async def call_compliance_specialist(state: LegalState) -> dict:
         "Use the search_compliance_law tool to ground your analysis. Keep your response under 200 words."
     )
 
-    llm = get_llm()
-    agent = create_react_agent(model=llm, tools=[search_compliance_law], prompt=compliance_prompt)
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
+    try:
+        llm = get_llm()
+        agent = create_react_agent(model=llm, tools=[search_compliance_law], prompt=compliance_prompt)
+        result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
 
-    final_msg = result["messages"][-1].content
-    print(f"  [Node: call_compliance_specialist] Done ({len(final_msg)} chars)")
-    return {"compliance_result": final_msg}
+        final_msg = result["messages"][-1].content
+        print(f"  [Node: call_compliance_specialist] Done ({len(final_msg)} chars)")
+        return {"compliance_result": final_msg}
+    except Exception as exc:
+        error = _error_summary(exc)
+        print(f"  [Node: call_compliance_specialist] Failed: {error}")
+        return {"compliance_result": f"[Compliance analysis unavailable: {error}]"}
+
+
+async def privacy_agent(state: LegalState) -> dict:
+    """Privacy specialist sub-agent (runs as inline ReAct agent)."""
+    from langgraph.prebuilt import create_react_agent
+
+    print("\n  [Node: privacy_agent] Privacy specialist agent starting...")
+
+    privacy_prompt = (
+        "You are a senior privacy counsel with expertise in GDPR, CCPA/CPRA, data breach "
+        "notification, lawful basis for processing, data subject rights, cross-border transfers, "
+        "and privacy governance. Use the search_privacy_law tool to ground your analysis. "
+        "Keep your response under 200 words."
+    )
+
+    try:
+        llm = get_llm()
+        agent = create_react_agent(model=llm, tools=[search_privacy_law], prompt=privacy_prompt)
+        result = await agent.ainvoke({"messages": [{"role": "user", "content": state["question"]}]})
+
+        final_msg = result["messages"][-1].content
+        print(f"  [Node: privacy_agent] Done ({len(final_msg)} chars)")
+        return {"privacy_result": final_msg}
+    except Exception as exc:
+        error = _error_summary(exc)
+        print(f"  [Node: privacy_agent] Failed: {error}")
+        return {"privacy_result": f"[Privacy analysis unavailable: {error}]"}
 
 
 async def aggregate(state: LegalState) -> dict:
     """Combine all specialist analyses into a final comprehensive answer."""
     print("\n  [Node: aggregate] Combining all specialist analyses...")
-    llm = get_llm()
 
     sections: list[str] = []
     if state.get("law_analysis"):
@@ -247,8 +349,12 @@ async def aggregate(state: LegalState) -> dict:
         sections.append(f"## Tax Analysis\n{state['tax_result']}")
     if state.get("compliance_result"):
         sections.append(f"## Regulatory Compliance Analysis\n{state['compliance_result']}")
+    if state.get("privacy_result"):
+        sections.append(f"## Privacy and Data Protection Analysis\n{state['privacy_result']}")
 
     combined = "\n\n---\n\n".join(sections)
+    if not combined:
+        combined = "No specialist analysis was available because all model calls failed."
 
     messages = [
         SystemMessage(
@@ -261,9 +367,15 @@ async def aggregate(state: LegalState) -> dict:
         ),
         HumanMessage(content=combined),
     ]
-    result = await llm.ainvoke(messages)
-    print(f"  [Node: aggregate] Done ({len(result.content)} chars)")
-    return {"final_answer": result.content}
+    try:
+        llm = get_llm()
+        result = await llm.ainvoke(messages)
+        print(f"  [Node: aggregate] Done ({len(result.content)} chars)")
+        return {"final_answer": result.content}
+    except Exception as exc:
+        error = _error_summary(exc)
+        print(f"  [Node: aggregate] Failed: {error}")
+        return {"final_answer": f"{combined}\n\n[Final synthesis unavailable: {error}]"}
 
 
 # ---------------------------------------------------------------------------
@@ -278,6 +390,7 @@ def create_graph():
     graph.add_node("check_routing", check_routing)
     graph.add_node("call_tax_specialist", call_tax_specialist)
     graph.add_node("call_compliance_specialist", call_compliance_specialist)
+    graph.add_node("privacy_agent", privacy_agent)
     graph.add_node("aggregate", aggregate)
 
     graph.set_entry_point("analyze_law")
@@ -285,16 +398,20 @@ def create_graph():
     graph.add_conditional_edges(
         "check_routing",
         route_to_specialists,
-        ["call_tax_specialist", "call_compliance_specialist", "aggregate"],
+        ["call_tax_specialist", "call_compliance_specialist", "privacy_agent", "aggregate"],
     )
     graph.add_edge("call_tax_specialist", "aggregate")
     graph.add_edge("call_compliance_specialist", "aggregate")
+    graph.add_edge("privacy_agent", "aggregate")
     graph.add_edge("aggregate", END)
 
     return graph.compile()
 
 
-QUESTION = "If a company breaks a contract and avoids taxes, what are the legal and regulatory consequences?"
+QUESTION = (
+    "If a company breaks a contract, avoids taxes, and leaks customer data, "
+    "what are the legal, regulatory, and privacy consequences?"
+)
 
 
 async def main():
@@ -305,11 +422,11 @@ async def main():
     print("[How it works]")
     print("  1. Lead attorney agent analyses the question")
     print("  2. Router decides which specialist agents are needed")
-    print("  3. Tax + Compliance specialists run IN PARALLEL (LangGraph Send API)")
+    print("  3. Tax + Compliance + Privacy specialists run IN PARALLEL (LangGraph Send API)")
     print("  4. Aggregator combines all analyses into a final answer")
     print()
     print("[Graph topology]")
-    print("  analyze_law -> check_routing -> [call_tax + call_compliance] -> aggregate -> END")
+    print("  analyze_law -> check_routing -> [call_tax + call_compliance + call_privacy] -> aggregate -> END")
     print()
     print(f"Question: {QUESTION}")
     print("-" * 70)
@@ -321,8 +438,10 @@ async def main():
         "law_analysis": "",
         "needs_tax": False,
         "needs_compliance": False,
+        "needs_privacy": False,
         "tax_result": "",
         "compliance_result": "",
+        "privacy_result": "",
         "final_answer": "",
     })
 
@@ -361,3 +480,12 @@ async def main():
 if __name__ == "__main__":
     load_dotenv()
     asyncio.run(main())
+
+    if os.getenv("DRAW_STAGE4_GRAPH") == "1":
+        try:
+            from IPython.display import Image, display
+
+            graph = create_graph()
+            display(Image(graph.get_graph().draw_mermaid_png()))
+        except ImportError as exc:
+            print(f"Cannot draw graph because IPython is not installed: {exc}")

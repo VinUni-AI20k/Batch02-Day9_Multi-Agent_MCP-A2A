@@ -211,7 +211,7 @@ Thêm vào tools list và test với câu hỏi về breach of contract.
 
 **Bài Tập 3.2:** Debug agent reasoning
 
-Thêm `verbose=True` vào `create_react_agent()` để xem chi tiết quá trình suy nghĩ của agent.
+Thêm `debug=True` vào `create_react_agent()` để xem chi tiết quá trình suy nghĩ của agent.
 
 ---
 
@@ -426,7 +426,7 @@ Nếu gặp vấn đề:
 
 ## **Bài Tập Cộng Điểm:**
 
-1. Vite Code HTML File Để demo các tương tác của các Agent ở stage 4 hoặc stage 5
+1. Viết code HTML file để demo các tương tác của các Agent ở stage 4 hoặc stage 5
 2. Sau khi chạy full Stage 5 (test_client.py) trả lời 2 câu hỏi:
 - Latency (Tổng thời gian trả lời 1 câu hỏi của hệ thống) là bao nhiêu giây?
 - Đề xuất phương án giảm latency và demo + show thời gian xử lý đã giảm được khi apply phương án?
